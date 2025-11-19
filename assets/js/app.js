@@ -639,17 +639,66 @@
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const data = new Uint8Array(ev.target.result);
         const wb = XLSX.read(data, { type: "array" });
-        productos = buildProductsFromWorkbook(wb);
-        saveCatalog(productos);
-        selectedProductIds.clear();
-        updateSelectionStateUI();
-        renderProductsByLetter(currentLetter);
+        const newProducts = buildProductsFromWorkbook(wb);
+        
+        if (newProducts.length === 0) {
+          showAlert("No se encontraron productos válidos en el archivo Excel.", "warning");
+          return;
+        }
+
+        // Confirmar si se deben agregar o reemplazar
+        const existingProducts = productos || [];
+        
+        if (existingProducts.length > 0) {
+          const shouldAppend = await showConfirm(
+            `Ya existen ${existingProducts.length} producto(s) registrados.\n\n` +
+            `¿Deseas AGREGAR los ${newProducts.length} nuevo(s) producto(s) a los existentes?\n\n` +
+            `- Aceptar: Agregar nuevos (se evitarán duplicados por nombre)\n` +
+            `- Cancelar: Reemplazar todos los productos existentes`,
+            "Agregar"
+          );
+
+          if (shouldAppend) {
+            // Agregar nuevos productos (evitando duplicados por nombre)
+            const nombres = new Set(existingProducts.map((p) => p.nombre.toLowerCase()));
+            const nuevos = newProducts.filter((p) => !nombres.has(p.nombre.toLowerCase()));
+            const duplicados = newProducts.length - nuevos.length;
+            if (duplicados > 0) {
+              showAlert(`${duplicados} producto(s) ya existen y no fueron agregados.`, "warning");
+            }
+            productos = [...existingProducts, ...nuevos];
+            saveCatalog(productos);
+            selectedProductIds.clear();
+            updateSelectionStateUI();
+            renderProductsByLetter(currentLetter);
+            showAlert(`Se agregaron ${nuevos.length} producto(s) exitosamente.`, "success");
+          } else {
+            // Reemplazar todos
+            const confirmed = await showConfirm(`¿Estás seguro de que deseas reemplazar todos los ${existingProducts.length} producto(s) existentes con los ${newProducts.length} nuevo(s)?`, "Reemplazar");
+            if (confirmed) {
+              productos = newProducts;
+              saveCatalog(productos);
+              selectedProductIds.clear();
+              updateSelectionStateUI();
+              renderProductsByLetter(currentLetter);
+              showAlert(`Se importaron ${newProducts.length} producto(s) exitosamente.`, "success");
+            }
+          }
+        } else {
+          // No hay productos existentes, importar directamente
+          productos = newProducts;
+          saveCatalog(productos);
+          selectedProductIds.clear();
+          updateSelectionStateUI();
+          renderProductsByLetter(currentLetter);
+          showAlert(`Se importaron ${newProducts.length} producto(s) exitosamente.`, "success");
+        }
       } catch (err) {
-        showAlert("No se pudo leer el Excel. Verifica el formato.", "error");
+        showAlert("No se pudo leer el archivo Excel. Verifica el formato.", "error");
         console.error(err);
       } finally {
         e.target.value = "";
