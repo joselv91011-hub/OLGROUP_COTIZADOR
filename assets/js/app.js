@@ -94,9 +94,9 @@
   const $filterConsecutivo = document.getElementById("filterConsecutivo");
   const $filterClient = document.getElementById("filterClient");
   const $filterProduct = document.getElementById("filterProduct");
+  const $filterUser = document.getElementById("filterUser");
   const $filterFrom = document.getElementById("filterFrom");
   const $filterTo = document.getElementById("filterTo");
-  const $btnApplyFilters = document.getElementById("btnApplyFilters");
   const $btnClearFilters = document.getElementById("btnClearFilters");
   const $btnExportXlsx = document.getElementById("btnExportXlsx");
   const $btnLoadExcel = document.getElementById("btnLoadExcel");
@@ -438,6 +438,9 @@
     if ($filterProduct) {
       $filterProduct.addEventListener("input", applyFiltersDebounced);
     }
+    if ($filterUser) {
+      $filterUser.addEventListener("input", applyFiltersDebounced);
+    }
     if ($filterFrom) {
       $filterFrom.addEventListener("change", () => renderHistory(getHistoryFilters()));
     }
@@ -445,8 +448,6 @@
       $filterTo.addEventListener("change", () => renderHistory(getHistoryFilters()));
     }
 
-    // Mantener el botón "Aplicar filtros" por compatibilidad (aunque ya no es necesario)
-    $btnApplyFilters.addEventListener("click", () => renderHistory(getHistoryFilters()));
 
     // Validar que el campo Duración de Análisis solo acepte números
     if ($quoteDuracionAnalisis) {
@@ -923,9 +924,15 @@
     $filterConsecutivo.value = "";
     $filterClient.value = "";
     $filterProduct.value = "";
-    $filterFrom.value = "";
-    $filterTo.value = "";
+    if ($filterUser) $filterUser.value = "";
+    if ($filterFrom) $filterFrom.value = "";
+    if ($filterTo) $filterTo.value = "";
     renderHistory();
+    
+    // Quitar el focus del botón después de limpiar
+    if ($btnClearFilters) {
+      $btnClearFilters.blur();
+    }
   }
 
   function buildAlphabetNav() {
@@ -1471,7 +1478,9 @@
       nota,
       clientId,
       products: selectedProducts.map((p) => ({ id: p.id, nombre: p.nombre, subtotal: p._sumTotal })),
-      totalCOP: totalGeneral
+      totalCOP: totalGeneral,
+      userName: currentUser ? currentUser.name || currentUser.username : "",
+      userUsername: currentUser ? currentUser.username : ""
     };
     saveQuote(quote);
     renderHistory();
@@ -2534,6 +2543,7 @@
       consecutivo: $filterConsecutivo.value.trim().toUpperCase(),
       client: $filterClient.value.trim().toLowerCase(),
       product: $filterProduct.value.trim().toLowerCase(),
+      user: $filterUser ? $filterUser.value.trim().toLowerCase() : "",
       from: $filterFrom.value,
       to: $filterTo.value
     };
@@ -2555,12 +2565,14 @@
       const productsText = q.products.map((p) => p.nombre).join(", ");
       // Mostrar el consecutivo de la cotización o el número secuencial si no existe
       const displayNumber = q.quoteNumber || (idx + 1);
+      const userName = q.userName || q.userUsername || "N/A";
       tr.innerHTML = `
         <td>${escapeHtml(displayNumber)}</td>
         <td>${formatDateHuman(q.date)}</td>
         <td>${escapeHtml(q.clientName)}</td>
         <td>${escapeHtml(productsText)}</td>
         <td class="text-center">${formatMoney(q.totalCOP != null ? q.totalCOP : q.totalUSD)}</td>
+        <td>${escapeHtml(userName)}</td>
         <td class="text-nowrap">
           <button class="btn btn-sm btn-outline-primary me-1" data-action="view" data-id="${q.id}">PDF</button>
           <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${q.id}">Borrar</button>
@@ -2595,10 +2607,11 @@
       formatDateHuman(q.date),
       q.clientName || "",
       (q.products || []).map((p) => p.nombre).join(", "),
-      Number((q.totalCOP != null ? q.totalCOP : (q.totalUSD != null ? q.totalUSD : 0)))
+      Number((q.totalCOP != null ? q.totalCOP : (q.totalUSD != null ? q.totalUSD : 0))),
+      q.userName || q.userUsername || "N/A"
     ]);
 
-    const headers = ["Consecutivo", "Fecha", "Cliente", "Productos", "Total COP"];
+    const headers = ["Consecutivo", "Fecha", "Cliente", "Productos", "Total COP", "Usuario"];
     const filename = `Historial_Cotizaciones_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
     // Intentar usar ExcelJS con estilos (igual que clientes, contactos y usuarios)
@@ -2607,7 +2620,7 @@
       headers, 
       filename, 
       "Historial",
-      [12, 15, 30, 50, 15]
+      [12, 15, 30, 50, 15, 20]
     );
     if (success) {
       return; // Si ExcelJS funcionó, salir
@@ -2626,7 +2639,8 @@
       { wch: 15 }, // Fecha
       { wch: 30 }, // Cliente
       { wch: 50 }, // Productos
-      { wch: 15 }  // Total COP
+      { wch: 15 }, // Total COP
+      { wch: 20 }  // Usuario
     ];
     
     XLSX.utils.book_append_sheet(wb, ws, "Historial");
@@ -2973,16 +2987,18 @@
     });
   }
 
-  function applyFilters(list, { consecutivo, client, product, from, to }) {
+  function applyFilters(list, { consecutivo, client, product, user, from, to }) {
     return list.filter((q) => {
       const quoteNumber = (q.quoteNumber || "").toUpperCase();
       const matchesConsecutivo = consecutivo ? quoteNumber.includes(consecutivo) : true;
       const matchesClient = client ? (q.clientName || "").toLowerCase().includes(client) : true;
       const matchesProduct = product ? (q.products || []).some((p) => (p.nombre || "").toLowerCase().includes(product)) : true;
+      const userName = (q.userName || q.userUsername || "").toLowerCase();
+      const matchesUser = user ? userName.includes(user) : true;
       const date = q.date || "";
       const matchesFrom = from ? date >= from : true;
       const matchesTo = to ? date <= to : true;
-      return matchesConsecutivo && matchesClient && matchesProduct && matchesFrom && matchesTo;
+      return matchesConsecutivo && matchesClient && matchesProduct && matchesUser && matchesFrom && matchesTo;
     });
   }
 

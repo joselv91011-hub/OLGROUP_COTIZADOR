@@ -119,22 +119,23 @@
                 <input type="text" id="filterProduct" class="form-control" placeholder="Producto">
               </div>
               <div class="col-auto">
+                <label class="visually-hidden" for="filterUser">Usuario</label>
+                <input type="text" id="filterUser" class="form-control" placeholder="Usuario">
+              </div>
+              <div class="col-auto">
                 <label class="visually-hidden" for="filterFrom">Desde</label>
-                <input type="date" id="filterFrom" class="form-control">
+                <input type="date" id="filterFrom" class="form-control" placeholder="Desde">
               </div>
               <div class="col-auto">
                 <label class="visually-hidden" for="filterTo">Hasta</label>
-                <input type="date" id="filterTo" class="form-control">
+                <input type="date" id="filterTo" class="form-control" placeholder="Hasta">
               </div>
               <div class="col-auto d-flex gap-2">
-                <button id="btnApplyFilters" class="btn btn-outline-secondary" type="button">
-                  <span class="label-full">Aplicar filtros</span>
-                  <span class="label-short">Aplicar</span>
+                <button id="btnClearFilters" class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                 </button>
-                <button id="btnClearFilters" class="btn btn-outline-dark" type="button">Limpiar</button>
-                <button id="btnExportXlsx" class="btn btn-accent" type="button">
-                  <span class="label-full">Exportar Excel</span>
-                  <span class="label-short">Exportar</span>
+                <button id="btnExportXlsx" type="button" class="btn btn-outline-primary">
+                  <i class="bi bi-download"></i> Exportar Excel
                 </button>
               </div>
             </form>
@@ -149,6 +150,7 @@
                     <th>Cliente</th>
                     <th>Productos</th>
                     <th class="text-center">Total COP</th>
+                    <th>Usuario</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
