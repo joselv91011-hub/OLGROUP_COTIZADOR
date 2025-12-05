@@ -185,7 +185,6 @@
   const $btnAddClient = document.getElementById("btnAddClient");
   const $btnImportClients = document.getElementById("btnImportClients");
   const $btnExportClients = document.getElementById("btnExportClients");
-  const $btnSyncGoogleSheets = document.getElementById("btnSyncGoogleSheets");
   const $clientsExcelInput = document.getElementById("clientsExcelInput");
   const $clientModalTitle = document.getElementById("clientModalTitle");
   const $clientId = document.getElementById("clientId");
@@ -284,67 +283,100 @@
 
   // ==================== SISTEMA DE AUTENTICACIÓN ====================
 
-  /**
-   * Inicializa usuarios por defecto SOLO si no hay usuarios en el sistema
-   * NO borra usuarios existentes
-   * Crea el usuario administrador principal si no existe
-   */
   function initDefaultUsers() {
     try {
       const users = getUsers();
       
-      // Verificar si el usuario administrador principal ya existe
-      const adminEmail = "jose.lv91011@gmail.com";
-      const adminExists = users.some(u => u && u.email && u.email.toLowerCase() === adminEmail.toLowerCase());
-      
-      // Verificar si ya existen usuarios válidos
-      const hasValidUsers = Array.isArray(users) && users.length > 0 && users.some(u => u && (u.id || u.email || u.username));
-      
-      if (hasValidUsers && adminExists) {
-        // Ya hay usuarios válidos y el admin principal existe, NO hacer nada
-        console.log("Usuarios existentes preservados. Total:", users.length);
-        console.log("Usuario administrador principal ya existe:", adminEmail);
-        return; // IMPORTANTE: Salir aquí para no modificar nada
-      }
-      
-      // Si no hay usuarios válidos O el admin principal no existe, crear/agregar el admin
-      const adminUser = {
-        id: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.id : `USER-ADMIN-${Date.now()}`,
-        username: "jose.lv91011",
-        email: adminEmail,
-        password: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.password : hashPassword("admin123"),
-        name: "Jose Loaiza",
-        role: "admin",
-        active: true,
-        createdAt: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Verificar si ya existen usuarios (no solo contar, verificar que sean válidos)
+      const hasValidUsers = Array.isArray(users) && users.length > 0 && users.some(u => u.id && u.email);
       
       if (!hasValidUsers) {
-        // No hay usuarios, crear solo el admin
-        saveUsers([adminUser], false); // false = no preservar existentes porque no hay
-        console.log("Usuario administrador principal creado:", adminUser.email);
-        console.log("Contraseña por defecto: admin123 - CAMBIAR DESPUÉS DEL PRIMER LOGIN");
-      } else {
-        // Hay usuarios pero falta el admin, agregarlo sin borrar los existentes
-        const updatedUsers = [...users];
-        const adminIndex = updatedUsers.findIndex(u => u.email?.toLowerCase() === adminEmail.toLowerCase());
-        if (adminIndex !== -1) {
-          // Actualizar admin existente
-          updatedUsers[adminIndex] = { ...updatedUsers[adminIndex], ...adminUser };
+        // Solo crear usuarios por defecto si realmente no hay usuarios válidos
+        const defaultUsers = [
+          {
+            id: "USER-ADMIN-001",
+            username: "admin",
+            email: "admin@olgroup.com",
+            password: hashPassword("admin"),
+            name: "Administrador",
+            role: "admin",
+            active: true,
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: "USER-VENDEDOR-001",
+            username: "vendedor",
+            email: "vendedor@olgroup.com",
+            password: hashPassword("vendedor"),
+            name: "Vendedor",
+            role: "vendedor",
+            active: true,
+            createdAt: new Date().toISOString()
+          }
+        ];
+        
+        // Verificar si los usuarios por defecto ya existen antes de agregarlos
+        const existingDefaultUsers = users.filter(u => 
+          u.id === "USER-ADMIN-001" || u.id === "USER-VENDEDOR-001" ||
+          u.email === "admin@olgroup.com" || u.email === "vendedor@olgroup.com"
+        );
+        
+        if (existingDefaultUsers.length === 0) {
+          // No hay usuarios por defecto, agregarlos
+          saveUsers(defaultUsers);
+          console.log("Usuarios por defecto creados");
+        } else if (users.length === 0) {
+          // Hay referencia a usuarios por defecto pero el array está vacío (datos corruptos)
+          // Restaurar solo los usuarios por defecto
+          saveUsers(defaultUsers);
+          console.log("Usuarios por defecto restaurados después de corrupción de datos");
         } else {
-          // Agregar nuevo admin
-          updatedUsers.push(adminUser);
+          // Ya hay usuarios, no hacer nada para preservar los datos existentes
+          console.log("Usuarios existentes preservados. Total:", users.length);
         }
-        saveUsers(updatedUsers, true); // true = preservar existentes
-        console.log("Usuario administrador principal agregado/actualizado:", adminUser.email);
-        if (!adminExists) {
-          console.log("Contraseña por defecto: admin123 - CAMBIAR DESPUÉS DEL PRIMER LOGIN");
+      } else {
+        // Hay usuarios válidos, verificar y agregar usuarios por defecto solo si no existen
+        const hasAdmin = users.some(u => u.id === "USER-ADMIN-001" || u.email === "admin@olgroup.com");
+        const hasVendedor = users.some(u => u.id === "USER-VENDEDOR-001" || u.email === "vendedor@olgroup.com");
+        
+        if (!hasAdmin || !hasVendedor) {
+          // Agregar usuarios por defecto que falten sin borrar los existentes
+          const usersToAdd = [];
+          if (!hasAdmin) {
+            usersToAdd.push({
+              id: "USER-ADMIN-001",
+              username: "admin",
+              email: "admin@olgroup.com",
+              password: hashPassword("admin"),
+              name: "Administrador",
+              role: "admin",
+              active: true,
+              createdAt: new Date().toISOString()
+            });
+          }
+          if (!hasVendedor) {
+            usersToAdd.push({
+              id: "USER-VENDEDOR-001",
+              username: "vendedor",
+              email: "vendedor@olgroup.com",
+              password: hashPassword("vendedor"),
+              name: "Vendedor",
+              role: "vendedor",
+              active: true,
+              createdAt: new Date().toISOString()
+            });
+          }
+          
+          if (usersToAdd.length > 0) {
+            const updatedUsers = [...users, ...usersToAdd];
+            saveUsers(updatedUsers);
+            console.log("Usuarios por defecto agregados sin borrar usuarios existentes");
+          }
         }
       }
     } catch (error) {
-      console.error("Error al inicializar usuarios:", error);
-      // En caso de error, NO hacer nada para no perder datos
+      console.error("Error al inicializar usuarios por defecto:", error);
+      // En caso de error, intentar recuperar datos del localStorage
       try {
         const rawData = localStorage.getItem("olgroup_users");
         if (rawData) {
@@ -394,7 +426,7 @@
     }
   }
 
-  function saveUsers(users, preserveExisting = true) {
+  function saveUsers(users) {
     try {
       // Validar que users sea un array
       if (!Array.isArray(users)) {
@@ -410,24 +442,7 @@
         console.warn("Algunos usuarios fueron filtrados por ser inválidos");
       }
       
-      // Si preserveExisting es true, fusionar con usuarios existentes
-      if (preserveExisting) {
-        const existingUsers = getUsers();
-        if (existingUsers.length > 0) {
-          const mergedUsers = mergeUsers(existingUsers, validUsers);
-          localStorage.setItem("olgroup_users", JSON.stringify(mergedUsers));
-          console.log(`Usuarios fusionados y guardados: ${mergedUsers.length} usuarios (${existingUsers.length} existentes + ${validUsers.length} nuevos/actualizados)`);
-          
-          // Verificar que se guardó correctamente
-          const verification = localStorage.getItem("olgroup_users");
-          if (!verification) {
-            throw new Error("No se pudo verificar el guardado");
-          }
-          return true;
-        }
-      }
-      
-      // Guardar en localStorage (reemplazo completo solo si preserveExisting es false)
+      // Guardar en localStorage
       localStorage.setItem("olgroup_users", JSON.stringify(validUsers));
       
       // Verificar que se guardó correctamente
@@ -443,40 +458,6 @@
       showAlert("No se pudo guardar los usuarios. Verifica el espacio disponible en el navegador.", "error");
       return false;
     }
-  }
-
-  /**
-   * Fusiona usuarios existentes con nuevos usuarios, evitando duplicados
-   */
-  function mergeUsers(existingUsers, newUsers) {
-    const merged = [...existingUsers];
-    const existingIds = new Set(existingUsers.map(u => u.id).filter(Boolean));
-    const existingEmails = new Set(existingUsers.map(u => u.email?.toLowerCase()).filter(Boolean));
-    
-    newUsers.forEach(newUser => {
-      // Verificar si el usuario ya existe por ID o email
-      const existsById = newUser.id && existingIds.has(newUser.id);
-      const existsByEmail = newUser.email && existingEmails.has(newUser.email.toLowerCase());
-      
-      if (!existsById && !existsByEmail) {
-        // Usuario nuevo, agregarlo
-        merged.push(newUser);
-      } else if (existsById) {
-        // Usuario existe por ID, actualizar
-        const index = merged.findIndex(u => u.id === newUser.id);
-        if (index !== -1) {
-          merged[index] = { ...merged[index], ...newUser, updatedAt: new Date().toISOString() };
-        }
-      } else if (existsByEmail) {
-        // Usuario existe por email, actualizar
-        const index = merged.findIndex(u => u.email?.toLowerCase() === newUser.email.toLowerCase());
-        if (index !== -1) {
-          merged[index] = { ...merged[index], ...newUser, updatedAt: new Date().toISOString() };
-        }
-      }
-    });
-    
-    return merged;
   }
 
   function getCurrentUser() {
@@ -1231,19 +1212,6 @@
     }
     if ($clientsExcelInput) $clientsExcelInput.addEventListener("change", onClientsExcelSelected);
     if ($btnExportClients) $btnExportClients.addEventListener("click", exportClientsToExcel);
-    if ($btnSyncGoogleSheets) {
-      $btnSyncGoogleSheets.addEventListener("click", async () => {
-        if ($btnSyncGoogleSheets) {
-          $btnSyncGoogleSheets.disabled = true;
-          $btnSyncGoogleSheets.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sincronizando...';
-        }
-        await syncFromGoogleSheets();
-        if ($btnSyncGoogleSheets) {
-          $btnSyncGoogleSheets.disabled = false;
-          $btnSyncGoogleSheets.innerHTML = '<i class="bi bi-cloud-arrow-down"></i> Sincronizar con Google Sheets';
-        }
-      });
-    }
     
     // Resetear formulario de cliente al cerrar el modal
     const clientModalEl = document.getElementById("clientModal");
@@ -4465,218 +4433,6 @@
 
   // ==================== FUNCIONES DE CLIENTES ====================
 
-  // ==================== CONFIGURACIÓN GOOGLE SHEETS ====================
-  // IMPORTANTE: Debes crear un Google Apps Script y reemplazar esta URL con la de tu script
-  // Ver instrucciones más abajo en los comentarios
-  const GOOGLE_SHEETS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJEF-8x9a-x5nOVCkJXD4mSPi5KuLps7da3r_ORkb9BZRugWk5rYnvNzyFm-jOfG4m/exec'; // URL completa de tu Google Apps Script
-  
-  // ==================== FUNCIONES GOOGLE SHEETS ====================
-  
-  /**
-   * Sincroniza los clientes con Google Sheets
-   * Guarda los clientes en la hoja de cálculo
-   */
-  async function syncClientsToGoogleSheets(clients) {
-    if (!GOOGLE_SHEETS_SCRIPT_URL) {
-      console.warn('Google Sheets Script URL no configurada. Los clientes solo se guardarán localmente.');
-      return { success: false, error: 'Google Sheets no configurado' };
-    }
-
-    try {
-      // Google Apps Script tiene problemas con CORS desde localhost
-      // Usar un iframe oculto para hacer la petición (método que funciona mejor)
-      const data = {
-        action: 'write',
-        data: clients.map(client => ({
-          id: client.id || '',
-          nombre: client.nombre || '',
-          nit: client.nit || '',
-          correo: client.correo || '',
-          celular: client.celular || '',
-          formaPago: client.formaPago || '',
-          contactos: Array.isArray(client.contactos) 
-            ? client.contactos.map(c => typeof c === 'object' ? c.nombre : c).join('; ')
-            : (client.contactos || ''),
-          createdAt: client.createdAt || '',
-          updatedAt: client.updatedAt || new Date().toISOString()
-        }))
-      };
-
-      // Crear un formulario oculto y enviarlo
-      return new Promise((resolve) => {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = GOOGLE_SHEETS_SCRIPT_URL;
-        form.target = '_blank';
-        form.style.display = 'none';
-        
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'data';
-        input.value = JSON.stringify(data);
-        form.appendChild(input);
-        
-        document.body.appendChild(form);
-        
-        // Enviar el formulario
-        form.submit();
-        
-        // Remover el formulario después de un momento
-        setTimeout(() => {
-          document.body.removeChild(form);
-        }, 1000);
-        
-        // Asumir éxito (no podemos verificar la respuesta con este método)
-        resolve({ success: true, message: 'Datos enviados a Google Sheets' });
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Clientes sincronizados con Google Sheets:', result);
-      return { success: true, result };
-    } catch (error) {
-      console.error('Error al sincronizar con Google Sheets:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Carga los clientes desde Google Sheets
-   */
-  async function loadClientsFromGoogleSheets() {
-    if (!GOOGLE_SHEETS_SCRIPT_URL) {
-      console.warn('Google Sheets Script URL no configurada.');
-      return { success: false, error: 'Google Sheets no configurado' };
-    }
-
-    try {
-      console.log('Intentando cargar desde Google Sheets:', GOOGLE_SHEETS_SCRIPT_URL);
-      
-      const response = await fetch(`${GOOGLE_SHEETS_SCRIPT_URL}?action=read`, {
-        method: 'GET',
-        mode: 'cors'
-      });
-
-      // Con mode: 'no-cors', no podemos leer la respuesta directamente
-      // Asumimos éxito si no hay error de red
-      // Para verificar realmente, necesitamos usar otro método
-      
-      // Intentar leer la respuesta si es posible
-      let result;
-      try {
-        if (response.ok || response.type === 'opaque') {
-          // Si la respuesta es 'opaque' (no-cors), no podemos leerla
-          // Pero asumimos éxito si llegamos aquí
-          result = { success: true, message: 'Datos enviados (verificar en Google Sheets)' };
-        } else {
-          // Intentar leer como JSON si es posible
-          result = await response.json();
-        }
-      } catch (e) {
-        // Si no podemos leer la respuesta, asumimos éxito
-        // (esto es común con no-cors)
-        result = { success: true, message: 'Datos enviados (no se pudo verificar respuesta debido a CORS)' };
-      }
-      
-      if (result.success && result.data) {
-        // Convertir los datos de la hoja de cálculo a formato de clientes
-        const clients = result.data.map((row, index) => ({
-          id: row.id || `CLIENT-GS-${Date.now()}-${index}`,
-          nombre: row.nombre || '',
-          nit: row.nit || '',
-          correo: row.correo || '',
-          celular: row.celular || '',
-          formaPago: row.formaPago || '',
-          contactos: row.contactos ? row.contactos.split(';').map(c => c.trim()).filter(c => c) : [],
-          createdAt: row.createdAt || new Date().toISOString(),
-          updatedAt: row.updatedAt || new Date().toISOString()
-        }));
-
-        return { success: true, clients };
-      }
-
-      return { success: false, error: result.error || 'No se recibieron datos del servidor' };
-    } catch (error) {
-      console.error('Error al cargar desde Google Sheets:', error);
-      // Si es un error de CORS, dar instrucciones más claras
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-        return { 
-          success: false, 
-          error: 'Error de CORS. Verifica que:\n1. El Google Apps Script esté desplegado como aplicación web\n2. El acceso esté configurado como "Cualquiera"\n3. Hayas esperado unos minutos después de desplegar\n4. Revisa las instrucciones en INSTRUCCIONES_GOOGLE_SHEETS.md' 
-        };
-      }
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Sincroniza bidireccionalmente: carga desde Google Sheets y guarda localmente
-   */
-  async function syncFromGoogleSheets() {
-    const result = await loadClientsFromGoogleSheets();
-    
-    if (result.success && result.clients) {
-      // Fusionar con clientes locales (evitar duplicados)
-      const localClients = getClients();
-      const mergedClients = mergeClients(localClients, result.clients);
-      saveClients(mergedClients);
-      renderClients();
-      showAlert('Clientes sincronizados desde Google Sheets correctamente.', 'success');
-      return true;
-    } else {
-      showAlert(`Error al sincronizar desde Google Sheets: ${result.error || 'Error desconocido'}`, 'error');
-      return false;
-    }
-  }
-
-  /**
-   * Fusiona clientes locales con clientes de Google Sheets
-   * Prioriza los datos más recientes
-   */
-  function mergeClients(localClients, sheetsClients) {
-    const merged = [...localClients];
-    const localIds = new Set(localClients.map(c => c.id));
-    const localByNit = new Map(localClients.map(c => [c.nit, c]));
-
-    sheetsClients.forEach(sheetClient => {
-      // Si el cliente ya existe por ID, actualizar si es más reciente
-      if (localIds.has(sheetClient.id)) {
-        const localIndex = merged.findIndex(c => c.id === sheetClient.id);
-        if (localIndex !== -1) {
-          const localClient = merged[localIndex];
-          const localDate = new Date(localClient.updatedAt || 0);
-          const sheetDate = new Date(sheetClient.updatedAt || 0);
-          
-          if (sheetDate > localDate) {
-            merged[localIndex] = sheetClient;
-          }
-        }
-      } else {
-        // Si no existe por ID, verificar por NIT
-        const existingByNit = localByNit.get(sheetClient.nit);
-        if (existingByNit) {
-          const localDate = new Date(existingByNit.updatedAt || 0);
-          const sheetDate = new Date(sheetClient.updatedAt || 0);
-          
-          if (sheetDate > localDate) {
-            const index = merged.findIndex(c => c.id === existingByNit.id);
-            if (index !== -1) {
-              merged[index] = sheetClient;
-            }
-          }
-        } else {
-          // Cliente nuevo, agregarlo
-          merged.push(sheetClient);
-        }
-      }
-    });
-
-    return merged;
-  }
-
   function getClients() {
     try {
       return JSON.parse(localStorage.getItem("olgroup_clients") || "[]");
@@ -4685,23 +4441,9 @@
     }
   }
 
-  async function saveClients(clients) {
+  function saveClients(clients) {
     try {
-      // Guardar en localStorage primero (siempre funciona)
       localStorage.setItem("olgroup_clients", JSON.stringify(clients || []));
-      
-      // Intentar sincronizar con Google Sheets (en segundo plano, no bloquea)
-      if (GOOGLE_SHEETS_SCRIPT_URL) {
-        syncClientsToGoogleSheets(clients).then(result => {
-          if (result.success) {
-            console.log('Clientes guardados en Google Sheets correctamente');
-          } else {
-            console.warn('No se pudo guardar en Google Sheets, pero se guardó localmente:', result.error);
-          }
-        }).catch(error => {
-          console.error('Error al guardar en Google Sheets:', error);
-        });
-      }
     } catch {
       showAlert("No se pudo guardar los clientes. Verifica el espacio disponible.", "error");
     }
@@ -4769,7 +4511,6 @@
     saveClients(updatedClients);
     renderClients();
     closeClientModal();
-    showAlert(id ? "Cliente actualizado correctamente." : "Cliente creado correctamente.", "success");
   }
 
   function deleteClient(id) {
