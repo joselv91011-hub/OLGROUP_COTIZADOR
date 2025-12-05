@@ -21,15 +21,18 @@
         </div>
         <form id="loginForm">
           <div class="mb-3">
-            <label for="loginUsername" class="form-label">Usuario</label>
-            <input type="text" class="form-control" id="loginUsername" placeholder="Ingresa tu usuario" required autocomplete="username">
+            <label for="loginUsername" class="form-label">Email</label>
+            <input type="email" class="form-control" id="loginUsername" placeholder="Ingresa tu email" required autocomplete="username">
           </div>
           <div class="mb-3">
             <label for="loginPassword" class="form-label">Contraseña</label>
             <input type="password" class="form-control" id="loginPassword" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
           </div>
           <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
-          <button type="submit" class="btn btn-primary w-100 mb-2">
+          <div id="loginSuccess" class="alert alert-success d-none" role="alert">
+            <i class="bi bi-check-circle"></i> Código de verificación enviado a tu correo electrónico.
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mb-2" id="loginSubmitBtn">
             <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
           </button>
         </form>
@@ -38,38 +41,95 @@
 
     <!-- Contenido principal (oculto hasta login) -->
     <div id="mainContent" class="d-none">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
-      <div class="container-fluid position-relative">
-        <a class="navbar-brand d-flex align-items-center fw-semibold gap-2 centered-brand" href="#">
-          <img src="assets/images/logoolg.png" alt="Olgroup" class="brand-logo">
-          <span>Laboratorio de Soluciones Analíticas</span>
-        </a>
-        <div class="d-flex ms-auto align-items-center gap-2">
-          <button id="openCartBtn" type="button" class="btn btn-outline-primary position-relative">
-            <i class="bi bi-file-earmark-text"></i>
-            <span class="d-none d-md-inline">Cotización</span>
-            <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-accent">0</span>
+      <!-- Navbar superior -->
+      <nav class="top-navbar navbar navbar-expand-lg navbar-light bg-white border-bottom">
+        <div class="container-fluid">
+          <button id="sidebarToggle" type="button" class="btn btn-link text-dark p-2 me-3" aria-label="Toggle sidebar">
+            <i class="bi bi-list fs-4"></i>
           </button>
-          <button id="logoutBtn" type="button" class="btn btn-outline-secondary">
-            <i class="bi bi-box-arrow-right"></i>
-            <span class="d-none d-md-inline">Salir</span>
-          </button>
+          <a class="navbar-brand d-flex align-items-center fw-semibold gap-2" href="#">
+            <img src="assets/images/logoolg.png" alt="Olgroup" class="brand-logo">
+            <span class="d-none d-sm-inline">Laboratorio de Soluciones Analíticas</span>
+          </a>
+          <div class="d-flex ms-auto align-items-center gap-2">
+            <button id="openCartBtn" type="button" class="btn btn-outline-primary position-relative">
+              <i class="bi bi-file-earmark-text"></i>
+              <span class="d-none d-md-inline">Cotización</span>
+              <span id="cartCount" class="position-absolute badge rounded-pill bg-accent">0</span>
+            </button>
+            <button id="logoutBtn" type="button" class="btn btn-outline-secondary">
+              <i class="bi bi-box-arrow-right"></i>
+              <span class="d-none d-md-inline">Salir</span>
+            </button>
+          </div>
         </div>
-        <span id="userInfo" class="text-muted small"></span>
-      </div>
-    </nav>
+      </nav>
 
-    <main class="container my-4">
-      <div class="mb-3">
-        <ul class="nav nav-tabs" id="mainNav">
-          <li class="nav-item"><button type="button" class="nav-link active" data-target="#viewProducts">Productos y procesos</button></li>
-          <li class="nav-item"><button type="button" class="nav-link" data-target="#viewHistory">Historial de cotizaciones</button></li>
-          <li class="nav-item"><button type="button" class="nav-link" data-target="#viewClients">Clientes</button></li>
-          <li class="nav-item"><button type="button" class="nav-link" data-target="#viewContactos">Contactos</button></li>
-          <li class="nav-item admin-only"><button type="button" class="nav-link" data-target="#viewStats">Estadísticas</button></li>
-          <li class="nav-item admin-only"><button type="button" class="nav-link" data-target="#viewUsers">Usuarios</button></li>
-        </ul>
-      </div>
+      <!-- Sidebar lateral izquierdo -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-header-top mb-3">
+            <div class="d-flex align-items-start gap-1">
+              <button id="sidebarToggleInSidebar" type="button" class="btn btn-link text-dark p-0" aria-label="Cerrar sidebar">
+                <i class="bi bi-x-lg fs-5"></i>
+              </button>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <img src="assets/images/logoolg.png" alt="Olgroup" class="brand-logo">
+                </div>
+                <h6 class="mb-0 fw-semibold sidebar-title">Laboratorio de Soluciones Analíticas</h6>
+              </div>
+            </div>
+          </div>
+          <div id="userInfo" class="text-muted small mb-4"></div>
+        </div>
+        <nav class="sidebar-nav">
+          <ul class="nav flex-column" id="mainNav">
+            <li class="nav-item">
+              <button type="button" class="nav-link active" data-target="#viewProducts">
+                <i class="bi bi-box-seam me-2"></i>
+                <span>Productos y procesos</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-target="#viewHistory">
+                <i class="bi bi-clock-history me-2"></i>
+                <span>Historial de cotizaciones</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-target="#viewClients">
+                <i class="bi bi-people me-2"></i>
+                <span>Clientes</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-target="#viewContactos">
+                <i class="bi bi-person-lines-fill me-2"></i>
+                <span>Contactos</span>
+              </button>
+            </li>
+            <li class="nav-item admin-only">
+              <button type="button" class="nav-link" data-target="#viewStats">
+                <i class="bi bi-bar-chart me-2"></i>
+                <span>Estadísticas</span>
+              </button>
+            </li>
+            <li class="nav-item admin-only">
+              <button type="button" class="nav-link" data-target="#viewUsers">
+                <i class="bi bi-person-gear me-2"></i>
+                <span>Usuarios</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Overlay para cerrar sidebar en móvil -->
+      <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
 
       <section id="viewProducts">
       <div class="row g-4">
@@ -79,8 +139,14 @@
               <h5 class="mb-0 text-center">Productos y procesos</h5>
               <div id="alphabetNav" class="alphabet-scroll d-flex flex-nowrap justify-content-center gap-1 w-100"></div>
               <div class="d-flex justify-content-center flex-wrap gap-2 w-100 mt-2">
-                <input id="productSearch" type="text" class="form-control" placeholder="Buscar producto" style="max-width: 420px;">
-                <div class="d-flex align-items-center gap-2">
+                <input id="productSearch" type="text" class="form-control w-100 w-md-auto" placeholder="🔍 Buscar producto..." style="max-width: 420px;" autocomplete="off">
+                <div class="d-flex align-items-center gap-2 flex-wrap w-100 justify-content-center" id="productButtonsContainer">
+                  <button id="btnAddProduct" type="button" class="btn btn-primary admin-only">
+                    <i class="bi bi-plus-circle"></i> Crear Producto
+                  </button>
+                  <button id="btnEditProduct" type="button" class="btn btn-outline-primary admin-only">
+                    <i class="bi bi-pencil"></i> Editar Producto
+                  </button>
                   <input id="excelInput" type="file" accept=".xlsx,.xls" class="d-none">
                   <button id="btnLoadExcel" type="button" class="btn btn-accent">
                     <i class="bi bi-upload"></i> Importar Excel
@@ -92,8 +158,11 @@
               </div>
             </div>
             <div class="card-body">
-              <div id="productsContainer" class="row g-3"></div>
-              <div id="noResults" class="text-center text-muted py-4 d-none">No hay productos para esta letra.</div>
+              <div id="productsContainer" class="row g-4"></div>
+              <div id="noResults" class="text-center text-muted py-5 d-none">
+                <p class="mb-2">No hay productos para esta letra.</p>
+                <small class="text-muted">Intenta buscar por otra letra o usa el buscador.</small>
+              </div>
               <nav id="productsPagination" class="mt-4 d-none" aria-label="Paginación de productos">
                 <ul class="pagination justify-content-center mb-0"></ul>
               </nav>
@@ -103,7 +172,7 @@
       </div>
       </section>
 
-      <section id="viewHistory" class="mt-4 d-none">
+      <section id="viewHistory" class="mt-2 d-none">
         <div class="card">
           <div class="card-header d-flex flex-column align-items-center gap-2">
             <h5 class="mb-0 text-center">Historial de cotizaciones</h5>
@@ -159,11 +228,14 @@
                 <tbody></tbody>
               </table>
             </div>
-            <div id="noHistory" class="text-center text-muted py-3 d-none">Aún no hay cotizaciones.</div>
+            <div id="noHistory" class="text-center text-muted py-5 d-none">
+              <p class="mb-2">Aún no hay cotizaciones.</p>
+              <small class="text-muted">Las cotizaciones que generes aparecerán aquí.</small>
+            </div>
           </div>
         </div>
       </section>
-      <section id="viewClients" class="mt-4 d-none">
+      <section id="viewClients" class="mt-2 d-none">
         <div class="card">
           <div class="card-header d-flex flex-column align-items-center gap-2">
             <h5 class="mb-0 text-center">Clientes</h5>
@@ -177,6 +249,9 @@
               </button>
               <button id="btnExportClients" type="button" class="btn btn-outline-primary">
                 <i class="bi bi-download"></i> Exportar Excel
+              </button>
+              <button id="btnSyncGoogleSheets" type="button" class="btn btn-outline-success">
+                <i class="bi bi-cloud-arrow-down"></i> Sincronizar con Google Sheets
               </button>
               <button id="btnDeleteClients" type="button" class="btn btn-outline-danger admin-only">
                 <i class="bi bi-trash"></i> Eliminar Clientes
@@ -200,11 +275,14 @@
                 <tbody id="clientsTableBody"></tbody>
               </table>
             </div>
-            <div id="noClients" class="text-center text-muted py-3 d-none">Aún no hay clientes registrados.</div>
+            <div id="noClients" class="text-center text-muted py-5 d-none">
+              <p class="mb-2">Aún no hay clientes registrados.</p>
+              <small class="text-muted">Haz clic en "Nuevo Cliente" para agregar uno.</small>
+            </div>
           </div>
         </div>
       </section>
-      <section id="viewContactos" class="mt-4 d-none">
+      <section id="viewContactos" class="mt-2 d-none">
         <div class="card">
           <div class="card-header d-flex flex-column align-items-center gap-2">
             <h5 class="mb-0 text-center">Contactos</h5>
@@ -239,11 +317,14 @@
                 <tbody id="contactosTableBody"></tbody>
               </table>
             </div>
-            <div id="noContactos" class="text-center text-muted py-3 d-none">Aún no hay contactos registrados.</div>
+            <div id="noContactos" class="text-center text-muted py-5 d-none">
+              <p class="mb-2">Aún no hay contactos registrados.</p>
+              <small class="text-muted">Haz clic en "Nuevo Contacto" para agregar uno.</small>
+            </div>
           </div>
         </div>
       </section>
-      <section id="viewStats" class="mt-4 d-none admin-only">
+      <section id="viewStats" class="mt-2 d-none admin-only">
         <div class="card w-100">
           <div class="card-header d-flex flex-column align-items-center gap-2">
             <h5 class="mb-0 text-center">Estadísticas</h5>
@@ -252,12 +333,15 @@
           <div class="card-body">
             <div class="w-100" style="max-width: 960px; margin: 0 auto;">
               <canvas id="statsTopProducts" height="220"></canvas>
-              <div id="noStats" class="text-center text-muted py-3 d-none">Aún no hay datos suficientes.</div>
+              <div id="noStats" class="text-center text-muted py-5 d-none">
+                <p class="mb-2">Aún no hay datos suficientes.</p>
+                <small class="text-muted">Las estadísticas aparecerán cuando haya más cotizaciones.</small>
+              </div>
             </div>
           </div>
         </div>
       </section>
-      <section id="viewUsers" class="mt-4 d-none admin-only">
+      <section id="viewUsers" class="mt-2 d-none admin-only">
         <div class="card w-100">
           <div class="card-header d-flex flex-column align-items-center gap-2">
             <h5 class="mb-0 text-center">Gestión de Usuarios</h5>
@@ -278,6 +362,8 @@
                     <th>#</th>
                     <th>Usuario</th>
                     <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Cargo</th>
                     <th>Rol</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -286,16 +372,18 @@
                 <tbody id="usersTableBody"></tbody>
               </table>
             </div>
-            <div id="noUsers" class="text-center text-muted py-3 d-none">Aún no hay usuarios registrados.</div>
+            <div id="noUsers" class="text-center text-muted py-5 d-none">
+              <p class="mb-2">Aún no hay usuarios registrados.</p>
+              <small class="text-muted">Haz clic en "Nuevo Usuario" para agregar uno.</small>
+            </div>
           </div>
         </div>
       </section>
-    </div>
-    </main>
+      </main>
 
-    <footer class="site-footer text-center small">
-      Desarrollado por: Jose Loaiza - Tecnólogo en Análisis y Desarrollo de Software
-    </footer>
+      <footer class="site-footer text-center small">
+        Desarrollado por: Jose Loaiza - Tecnólogo en Análisis y Desarrollo de Software
+      </footer>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -304,7 +392,44 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
+    <!-- Modal de verificación de código -->
+    <div class="modal fade" id="verificationModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title">Verificación de Código</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" id="closeVerificationModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+              <h5 class="mt-3">Código de Verificación</h5>
+              <p class="text-muted">Hemos enviado un código de verificación a tu correo electrónico.</p>
+              <p class="text-muted small" id="verificationEmail"></p>
+            </div>
+            <form id="verificationForm">
+              <div class="mb-3">
+                <label for="verificationCode" class="form-label">Ingresa el código de 6 dígitos</label>
+                <input type="text" class="form-control text-center" id="verificationCode" placeholder="000000" maxlength="6" required autocomplete="off" style="font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: bold;">
+                <small class="text-muted">El código expira en <span id="codeExpiryTime">5</span> minutos</small>
+              </div>
+              <div id="verificationError" class="alert alert-danger d-none" role="alert"></div>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <button type="button" class="btn btn-link text-decoration-none" id="resendCodeBtn">
+                  <i class="bi bi-arrow-clockwise"></i> Reenviar código
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-check-circle"></i> Verificar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de alerta Bootstrap -->
     <div class="modal fade" id="alertModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -488,8 +613,37 @@
                 <input type="text" class="form-control" id="userUsername" placeholder="Nombre de usuario" required>
               </div>
               <div class="mb-3">
+                <label class="form-label" for="userEmail">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="userEmail" placeholder="correo@ejemplo.com" required>
+              </div>
+              <div class="mb-3">
                 <label class="form-label" for="userName">Nombre completo <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="userName" placeholder="Nombre completo" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="userCargo">Cargo</label>
+                <select class="form-select" id="userCargo">
+                  <option value="">Selecciona un cargo</option>
+                  <option value="Analista Contable">Analista Contable</option>
+                  <option value="Analista de operaciones">Analista de operaciones</option>
+                  <option value="Analista Estabilidades">Analista Estabilidades</option>
+                  <option value="Analista Junior">Analista Junior</option>
+                  <option value="Analista Senior">Analista Senior</option>
+                  <option value="Asistente operaciones">Asistente operaciones</option>
+                  <option value="Auxiliar Administrativo">Auxiliar Administrativo</option>
+                  <option value="Auxiliar Calidad y Gestión Humana">Auxiliar Calidad y Gestión Humana</option>
+                  <option value="Auxiliar Logistica">Auxiliar Logistica</option>
+                  <option value="Coordinador estabilidades y validaciones">Coordinador estabilidades y validaciones</option>
+                  <option value="Gerencia General">Gerencia General</option>
+                  <option value="Gerencia Operaciones">Gerencia Operaciones</option>
+                  <option value="Practicante Analisis y desarrollo de software">Practicante Analisis y desarrollo de software</option>
+                  <option value="Recepción Estabilidades">Recepción Estabilidades</option>
+                  <option value="Recepcion Muestras">Recepcion Muestras</option>
+                  <option value="Servicios Generales">Servicios Generales</option>
+                  <option value="Tecnologo en GSST y talento Humano">Tecnologo en GSST y talento Humano</option>
+                  <option value="Tecnologo junior">Tecnologo junior</option>
+                  <option value="Tecnologo Senior">Tecnologo Senior</option>
+                </select>
               </div>
               <div class="mb-3">
                 <label class="form-label" for="userPassword">Contraseña <span id="passwordRequired" class="text-danger">*</span></label>
@@ -626,7 +780,7 @@
         </div>
       </div>
     </div>
-
+  
     <!-- Modal eliminar productos -->
     <div class="modal fade" id="deleteProductsModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -661,6 +815,87 @@
             <button type="button" class="btn btn-danger" id="btnDeleteAllProducts">
               <i class="bi bi-trash-fill"></i> Eliminar Todos los Productos
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal seleccionar producto para editar -->
+    <div class="modal fade" id="selectProductModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title">Seleccionar Producto para Editar</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <input type="text" id="selectProductSearch" class="form-control mb-3" placeholder="Buscar producto...">
+              <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem;">
+                <div id="selectProductList" class="list-group list-group-flush">
+                  <!-- Los productos se agregarán dinámicamente aquí -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal producto -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="productModalTitle">Nuevo Producto</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="productFormModal">
+              <input type="hidden" id="productId" value="">
+              <div class="mb-4">
+                <label class="form-label" for="productNombre">Nombre del Producto <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="productNombre" placeholder="Ej: ACEITE DE EUCALIPTO USP" required>
+              </div>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <label class="form-label mb-0">Procesos/Análisis</label>
+                  <button type="button" class="btn btn-sm btn-primary" id="btnAddProceso">
+                    <i class="bi bi-plus-circle"></i> Agregar Análisis
+                  </button>
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light sticky-top">
+                      <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Código</th>
+                        <th>Análisis</th>
+                        <th>Método</th>
+                        <th>C. Mtra. [g]</th>
+                        <th>Cant.</th>
+                        <th>Vr. Unitario 1</th>
+                        <th>Vr. Unitario 2</th>
+                        <th>Vr. Unitario 3</th>
+                        <th>Vr. Unitario USD</th>
+                        <th style="width: 60px;">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="procesosContainer">
+                      <!-- Los procesos se agregarán dinámicamente aquí -->
+                    </tbody>
+                  </table>
+                </div>
+                <small class="text-muted">Agrega al menos un análisis para el producto.</small>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSaveProduct">Guardar</button>
           </div>
         </div>
       </div>

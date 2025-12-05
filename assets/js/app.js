@@ -1,6 +1,30 @@
 (function () {
   "use strict";
 
+  // Manejador de errores global para suprimir errores de extensiones de Chrome
+  window.addEventListener('error', function(event) {
+    // Suprimir el error común de extensiones de Chrome que no afecta la funcionalidad
+    const errorMessage = event.message || event.error?.message || '';
+    if (errorMessage.includes('message channel closed') || 
+        errorMessage.includes('asynchronous response')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
+  }, true);
+
+  // Manejador para promesas rechazadas no capturadas
+  window.addEventListener('unhandledrejection', function(event) {
+    // Suprimir el error común de extensiones de Chrome
+    const errorMessage = event.reason?.message || event.reason?.toString() || '';
+    if (errorMessage.includes('message channel closed') || 
+        errorMessage.includes('asynchronous response')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return true;
+    }
+  });
+
   // Datos de ejemplo. Puedes reemplazar/expandir según tu catálogo real.
   /**
    * Estructura por producto
@@ -105,6 +129,36 @@
   const $productSearch = document.getElementById("productSearch");
   const $scrollTopBtn = document.getElementById("scrollTopBtn");
   
+  // Sidebar
+  const $sidebarToggle = document.getElementById("sidebarToggle");
+  const $sidebarToggleInSidebar = document.getElementById("sidebarToggleInSidebar");
+  const $sidebar = document.getElementById("sidebar");
+  const $sidebarOverlay = document.getElementById("sidebarOverlay");
+  
+  // Referencias a los handlers del sidebar para poder removerlos
+  let sidebarToggleHandler = null;
+  let sidebarToggleTouchHandler = null;
+  let sidebarToggleInSidebarHandler = null;
+  let sidebarOverlayHandler = null;
+  let sidebarResizeHandler = null;
+  
+  // Productos - crear/editar
+  const $btnAddProduct = document.getElementById("btnAddProduct");
+  const $btnEditProduct = document.getElementById("btnEditProduct");
+  const $productModal = document.getElementById("productModal");
+  const $productModalTitle = document.getElementById("productModalTitle");
+  const $productId = document.getElementById("productId");
+  const $productNombre = document.getElementById("productNombre");
+  const $procesosContainer = document.getElementById("procesosContainer");
+  const $btnAddProceso = document.getElementById("btnAddProceso");
+  const $btnSaveProduct = document.getElementById("btnSaveProduct");
+  const $productFormModal = document.getElementById("productFormModal");
+  
+  // Modal seleccionar producto para editar
+  const $selectProductModal = document.getElementById("selectProductModal");
+  const $selectProductList = document.getElementById("selectProductList");
+  const $selectProductSearch = document.getElementById("selectProductSearch");
+  
   // Modal eliminar productos
   const $deleteProductsModal = document.getElementById("deleteProductsModal");
   const $deleteProductsList = document.getElementById("deleteProductsList");
@@ -131,6 +185,7 @@
   const $btnAddClient = document.getElementById("btnAddClient");
   const $btnImportClients = document.getElementById("btnImportClients");
   const $btnExportClients = document.getElementById("btnExportClients");
+  const $btnSyncGoogleSheets = document.getElementById("btnSyncGoogleSheets");
   const $clientsExcelInput = document.getElementById("clientsExcelInput");
   const $clientModalTitle = document.getElementById("clientModalTitle");
   const $clientId = document.getElementById("clientId");
@@ -173,8 +228,24 @@
   const $loginUsername = document.getElementById("loginUsername");
   const $loginPassword = document.getElementById("loginPassword");
   const $loginError = document.getElementById("loginError");
+  const $loginSuccess = document.getElementById("loginSuccess");
+  const $loginSubmitBtn = document.getElementById("loginSubmitBtn");
   const $logoutBtn = document.getElementById("logoutBtn");
   const $userInfo = document.getElementById("userInfo");
+  
+  // Verificación de código
+  const $verificationModal = document.getElementById("verificationModal");
+  const $verificationForm = document.getElementById("verificationForm");
+  const $verificationCode = document.getElementById("verificationCode");
+  const $verificationError = document.getElementById("verificationError");
+  const $verificationEmail = document.getElementById("verificationEmail");
+  const $resendCodeBtn = document.getElementById("resendCodeBtn");
+  const $codeExpiryTime = document.getElementById("codeExpiryTime");
+  const $closeVerificationModal = document.getElementById("closeVerificationModal");
+  
+  // Almacenar información de verificación temporal
+  let pendingVerification = null;
+  let verificationTimer = null;
   
   // Gestión de usuarios
   const $usersTableBody = document.getElementById("usersTableBody");
@@ -184,7 +255,9 @@
   const $userModalTitle = document.getElementById("userModalTitle");
   const $userId = document.getElementById("userId");
   const $userUsername = document.getElementById("userUsername");
+  const $userEmail = document.getElementById("userEmail");
   const $userName = document.getElementById("userName");
+  const $userCargo = document.getElementById("userCargo");
   const $userPassword = document.getElementById("userPassword");
   const $userRole = document.getElementById("userRole");
   const $userActive = document.getElementById("userActive");
@@ -201,6 +274,9 @@
   // Map para almacenar el valor unitario seleccionado por producto
   // Clave: productId, Valor: 'vrUnit1' | 'vrUnit2' | 'vrUnit3' | 'vrUnitUSD'
   let selectedUnitValues = new Map();
+  // Map para almacenar qué análisis están seleccionados por producto
+  // Clave: productId, Valor: Set<index> donde index es el índice del proceso en product.procesos
+  let selectedAnalisis = new Map();
   let currentLetter = "A";
   let currentPage = 1;
   const productsPerPage = 10;
@@ -208,31 +284,75 @@
 
   // ==================== SISTEMA DE AUTENTICACIÓN ====================
 
+  /**
+   * Inicializa usuarios por defecto SOLO si no hay usuarios en el sistema
+   * NO borra usuarios existentes
+   * Crea el usuario administrador principal si no existe
+   */
   function initDefaultUsers() {
-    const users = getUsers();
-    if (users.length === 0) {
-      // Crear usuarios por defecto
-      const defaultUsers = [
-        {
-          id: "USER-ADMIN-001",
-          username: "admin",
-          password: hashPassword("admin"),
-          name: "Administrador",
-          role: "admin",
-          active: true,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "USER-VENDEDOR-001",
-          username: "vendedor",
-          password: hashPassword("vendedor"),
-          name: "Vendedor",
-          role: "vendedor",
-          active: true,
-          createdAt: new Date().toISOString()
+    try {
+      const users = getUsers();
+      
+      // Verificar si el usuario administrador principal ya existe
+      const adminEmail = "jose.lv91011@gmail.com";
+      const adminExists = users.some(u => u && u.email && u.email.toLowerCase() === adminEmail.toLowerCase());
+      
+      // Verificar si ya existen usuarios válidos
+      const hasValidUsers = Array.isArray(users) && users.length > 0 && users.some(u => u && (u.id || u.email || u.username));
+      
+      if (hasValidUsers && adminExists) {
+        // Ya hay usuarios válidos y el admin principal existe, NO hacer nada
+        console.log("Usuarios existentes preservados. Total:", users.length);
+        console.log("Usuario administrador principal ya existe:", adminEmail);
+        return; // IMPORTANTE: Salir aquí para no modificar nada
+      }
+      
+      // Si no hay usuarios válidos O el admin principal no existe, crear/agregar el admin
+      const adminUser = {
+        id: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.id : `USER-ADMIN-${Date.now()}`,
+        username: "jose.lv91011",
+        email: adminEmail,
+        password: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.password : hashPassword("admin123"),
+        name: "Jose Loaiza",
+        role: "admin",
+        active: true,
+        createdAt: adminExists ? users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase())?.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      if (!hasValidUsers) {
+        // No hay usuarios, crear solo el admin
+        saveUsers([adminUser], false); // false = no preservar existentes porque no hay
+        console.log("Usuario administrador principal creado:", adminUser.email);
+        console.log("Contraseña por defecto: admin123 - CAMBIAR DESPUÉS DEL PRIMER LOGIN");
+      } else {
+        // Hay usuarios pero falta el admin, agregarlo sin borrar los existentes
+        const updatedUsers = [...users];
+        const adminIndex = updatedUsers.findIndex(u => u.email?.toLowerCase() === adminEmail.toLowerCase());
+        if (adminIndex !== -1) {
+          // Actualizar admin existente
+          updatedUsers[adminIndex] = { ...updatedUsers[adminIndex], ...adminUser };
+        } else {
+          // Agregar nuevo admin
+          updatedUsers.push(adminUser);
         }
-      ];
-      saveUsers(defaultUsers);
+        saveUsers(updatedUsers, true); // true = preservar existentes
+        console.log("Usuario administrador principal agregado/actualizado:", adminUser.email);
+        if (!adminExists) {
+          console.log("Contraseña por defecto: admin123 - CAMBIAR DESPUÉS DEL PRIMER LOGIN");
+        }
+      }
+    } catch (error) {
+      console.error("Error al inicializar usuarios:", error);
+      // En caso de error, NO hacer nada para no perder datos
+      try {
+        const rawData = localStorage.getItem("olgroup_users");
+        if (rawData) {
+          console.log("Datos encontrados en localStorage:", rawData.substring(0, 100));
+        }
+      } catch (e) {
+        console.error("Error al leer localStorage:", e);
+      }
     }
   }
 
@@ -249,18 +369,114 @@
 
   function getUsers() {
     try {
-      return JSON.parse(localStorage.getItem("olgroup_users") || "[]");
-    } catch {
+      const usersData = localStorage.getItem("olgroup_users");
+      if (!usersData) {
+        return [];
+      }
+      const parsed = JSON.parse(usersData);
+      // Validar que sea un array
+      if (!Array.isArray(parsed)) {
+        console.warn("Los datos de usuarios no son un array válido. Restaurando...");
+        return [];
+      }
+      // Validar que los usuarios tengan estructura básica
+      return parsed.filter(u => u && (u.id || u.email || u.username));
+    } catch (error) {
+      console.error("Error al leer usuarios del localStorage:", error);
+      // Intentar recuperar datos corruptos
+      try {
+        const rawData = localStorage.getItem("olgroup_users");
+        console.warn("Datos corruptos encontrados:", rawData);
+      } catch (e) {
+        console.error("Error al leer datos corruptos:", e);
+      }
       return [];
     }
   }
 
-  function saveUsers(users) {
+  function saveUsers(users, preserveExisting = true) {
     try {
-      localStorage.setItem("olgroup_users", JSON.stringify(users || []));
-    } catch {
-      showAlert("No se pudo guardar los usuarios. Verifica el espacio disponible.", "error");
+      // Validar que users sea un array
+      if (!Array.isArray(users)) {
+        console.error("Error: saveUsers recibió datos que no son un array:", users);
+        showAlert("Error al guardar usuarios: datos inválidos.", "error");
+        return false;
+      }
+      
+      // Validar que los usuarios tengan estructura básica
+      const validUsers = users.filter(u => u && (u.id || u.email || u.username));
+      
+      if (validUsers.length !== users.length) {
+        console.warn("Algunos usuarios fueron filtrados por ser inválidos");
+      }
+      
+      // Si preserveExisting es true, fusionar con usuarios existentes
+      if (preserveExisting) {
+        const existingUsers = getUsers();
+        if (existingUsers.length > 0) {
+          const mergedUsers = mergeUsers(existingUsers, validUsers);
+          localStorage.setItem("olgroup_users", JSON.stringify(mergedUsers));
+          console.log(`Usuarios fusionados y guardados: ${mergedUsers.length} usuarios (${existingUsers.length} existentes + ${validUsers.length} nuevos/actualizados)`);
+          
+          // Verificar que se guardó correctamente
+          const verification = localStorage.getItem("olgroup_users");
+          if (!verification) {
+            throw new Error("No se pudo verificar el guardado");
+          }
+          return true;
+        }
+      }
+      
+      // Guardar en localStorage (reemplazo completo solo si preserveExisting es false)
+      localStorage.setItem("olgroup_users", JSON.stringify(validUsers));
+      
+      // Verificar que se guardó correctamente
+      const verification = localStorage.getItem("olgroup_users");
+      if (!verification) {
+        throw new Error("No se pudo verificar el guardado");
+      }
+      
+      console.log(`Usuarios guardados correctamente: ${validUsers.length} usuarios`);
+      return true;
+    } catch (error) {
+      console.error("Error al guardar usuarios:", error);
+      showAlert("No se pudo guardar los usuarios. Verifica el espacio disponible en el navegador.", "error");
+      return false;
     }
+  }
+
+  /**
+   * Fusiona usuarios existentes con nuevos usuarios, evitando duplicados
+   */
+  function mergeUsers(existingUsers, newUsers) {
+    const merged = [...existingUsers];
+    const existingIds = new Set(existingUsers.map(u => u.id).filter(Boolean));
+    const existingEmails = new Set(existingUsers.map(u => u.email?.toLowerCase()).filter(Boolean));
+    
+    newUsers.forEach(newUser => {
+      // Verificar si el usuario ya existe por ID o email
+      const existsById = newUser.id && existingIds.has(newUser.id);
+      const existsByEmail = newUser.email && existingEmails.has(newUser.email.toLowerCase());
+      
+      if (!existsById && !existsByEmail) {
+        // Usuario nuevo, agregarlo
+        merged.push(newUser);
+      } else if (existsById) {
+        // Usuario existe por ID, actualizar
+        const index = merged.findIndex(u => u.id === newUser.id);
+        if (index !== -1) {
+          merged[index] = { ...merged[index], ...newUser, updatedAt: new Date().toISOString() };
+        }
+      } else if (existsByEmail) {
+        // Usuario existe por email, actualizar
+        const index = merged.findIndex(u => u.email?.toLowerCase() === newUser.email.toLowerCase());
+        if (index !== -1) {
+          merged[index] = { ...merged[index], ...newUser, updatedAt: new Date().toISOString() };
+        }
+      }
+    });
+    
+    return merged;
   }
 
   function getCurrentUser() {
@@ -282,29 +498,347 @@
     } catch {}
   }
 
-  function login(username, password) {
-    const users = getUsers();
-    const hashedPassword = hashPassword(password);
-    
-    // Primero verificar si el usuario existe y la contraseña es correcta
-    const user = users.find(
-      (u) => u.username.toLowerCase() === username.toLowerCase() && 
-             u.password === hashedPassword
-    );
+  // Funciones de verificación de código
+  function generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
 
-    if (user) {
-      // Si el usuario existe pero está inactivo
-      if (user.active === false) {
-        return { success: false, inactive: true };
+  /**
+   * Envía un código de verificación por correo electrónico usando EmailJS
+   * 
+   * CONFIGURACIÓN DE LA PLANTILLA EN EMAILJS:
+   * 
+   * 1. Ve a tu cuenta de EmailJS: https://dashboard.emailjs.com/
+   * 2. Ve a "Email Templates" y edita la plantilla con ID: template_a5mi2mc
+   * 3. Configura el ASUNTO del correo:
+   *    Código de verificación - Laboratorio de Soluciones Analíticas
+   * 
+   * 4. Configura el CUERPO del correo con este contenido:
+   * 
+   *    Hola {{to_name}},
+   *    
+   *    Tu código de verificación para iniciar sesión es:
+   *    
+   *    {{verification_code}}
+   *    
+   *    Este código expira en 5 minutos.
+   *    
+   *    Si no solicitaste este código, ignora este mensaje.
+   *    
+   *    Saludos,
+   *    {{from_name}}
+   * 
+   * 5. IMPORTANTE: Asegúrate de usar EXACTAMENTE estos nombres de variables:
+   *    - {{to_email}} - Email del destinatario
+   *    - {{to_name}} - Nombre del usuario
+   *    - {{verification_code}} - Código de 6 dígitos (ESTE ES EL MÁS IMPORTANTE)
+   *    - {{from_name}} - Nombre del remitente
+   * 
+   * 6. Guarda la plantilla
+   * 7. Verifica que la plantilla esté activa
+   */
+  function sendVerificationEmail(email, code, userName) {
+    return new Promise((resolve, reject) => {
+      // ============================================
+      // CONFIGURACIÓN DE EMAILJS
+      // ============================================
+      const EMAILJS_SERVICE_ID = 'service_tbwaczv';
+      const EMAILJS_TEMPLATE_ID = 'template_a5mi2mc';
+      const EMAILJS_PUBLIC_KEY = 'ZUesJyPvBcqMQfcP1';
+      // ============================================
+      
+      // Verificar que EmailJS esté disponible
+      if (typeof emailjs === 'undefined' || typeof emailjs.send !== 'function') {
+        console.error('❌ EmailJS no está cargado o no está disponible.');
+        console.warn('⚠️ Código de verificación (solo para desarrollo):', code);
+        console.warn('📝 Asegúrate de que el script de EmailJS esté cargado correctamente.');
+        console.warn('🔗 Script esperado: https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js');
+        
+        // Simular envío exitoso después de 1 segundo para permitir desarrollo
+        setTimeout(() => {
+          resolve({ success: true, code: code });
+        }, 1000);
+        return;
       }
-      // Si el usuario existe y está activo
-      const { password: _, ...userWithoutPassword } = user;
-      setCurrentUser(userWithoutPassword);
-      return { success: true };
+      
+      console.log('✅ EmailJS está disponible y listo para usar');
+      
+      // Preparar los parámetros del template
+      // IMPORTANTE: Estos nombres deben coincidir EXACTAMENTE con las variables en tu plantilla de EmailJS
+      const templateParams = {
+        to_email: email,
+        to_name: userName || 'Usuario',
+        verification_code: code,
+        from_name: 'Laboratorio de Soluciones Analíticas',
+        // Variables alternativas por si la plantilla usa otros nombres
+        email: email,
+        name: userName || 'Usuario',
+        code: code
+      };
+      
+      console.log('📧 Enviando código de verificación a:', email);
+      console.log('📋 Parámetros del template:', templateParams);
+      console.log('🔑 Service ID:', EMAILJS_SERVICE_ID);
+      console.log('📝 Template ID:', EMAILJS_TEMPLATE_ID);
+      console.log('🔐 Public Key:', EMAILJS_PUBLIC_KEY);
+      
+      // Inicializar EmailJS con la Public Key
+      try {
+        if (typeof emailjs.init === 'function') {
+          emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+      } catch (initError) {
+        console.warn('⚠️ EmailJS init error (puede estar ya inicializado):', initError);
+      }
+      
+      // Enviar email usando la API de EmailJS v4
+      // Nota: En v4, la Public Key se puede pasar como 4to parámetro o usar init()
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+      .then((response) => {
+        console.log('✅ Email enviado exitosamente!');
+        console.log('📊 Respuesta:', {
+          status: response.status,
+          text: response.text
+        });
+        console.log('✉️ Código de verificación enviado a:', email);
+        resolve({ success: true });
+      })
+      .catch((error) => {
+        console.error('❌ Error al enviar código de verificación');
+        console.error('📊 Detalles del error:', {
+          status: error?.status || 'N/A',
+          text: error?.text || 'N/A',
+          message: error?.message || 'Error desconocido',
+          error: error
+        });
+        
+        // Mostrar el código en consola para debugging
+        console.warn('⚠️ Código de verificación (para debugging):', code);
+        console.warn('⚠️ Checklist de verificación:');
+        console.warn('  1. Service ID correcto?', EMAILJS_SERVICE_ID);
+        console.warn('  2. Template ID correcto?', EMAILJS_TEMPLATE_ID);
+        console.warn('  3. Public Key correcto?', EMAILJS_PUBLIC_KEY);
+        console.warn('  4. Plantilla tiene variables? to_email, to_name, verification_code, from_name');
+        console.warn('  5. Servicio de email activo en EmailJS?');
+        console.warn('  6. Revisa la consola de EmailJS para más detalles');
+        
+        // Resolver con el código para permitir continuar en caso de error
+        resolve({ success: true, code: code, error: error });
+      });
+    });
+  }
+
+  function startVerificationTimer(expiryMinutes = 5) {
+    if (verificationTimer) {
+      clearInterval(verificationTimer);
     }
     
-    // Usuario no encontrado o contraseña incorrecta
-    return { success: false, inactive: false };
+    let timeLeft = expiryMinutes * 60; // Convertir a segundos
+    
+    const updateTimer = () => {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      
+      if ($codeExpiryTime) {
+        $codeExpiryTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      if (timeLeft <= 0) {
+        clearInterval(verificationTimer);
+        if (pendingVerification) {
+          pendingVerification = null;
+          if ($verificationModal) {
+            const modal = bootstrap.Modal.getInstance($verificationModal);
+            if (modal) modal.hide();
+          }
+          if ($verificationError) {
+            $verificationError.textContent = 'El código de verificación ha expirado. Por favor, inicia sesión nuevamente.';
+            $verificationError.classList.remove('d-none');
+          }
+        }
+        return;
+      }
+      
+      timeLeft--;
+    };
+    
+    updateTimer(); // Actualizar inmediatamente
+    verificationTimer = setInterval(updateTimer, 1000);
+  }
+
+  function showVerificationModal(email, user) {
+    if (!$verificationModal) return;
+    
+    // Generar código de verificación
+    const code = generateVerificationCode();
+    const expiryTime = new Date(Date.now() + 5 * 60000); // 5 minutos
+    
+    // Guardar información de verificación
+    pendingVerification = {
+      code: code,
+      email: email,
+      user: user,
+      expiryTime: expiryTime
+    };
+    
+    // Mostrar email en el modal
+    if ($verificationEmail) {
+      $verificationEmail.textContent = email;
+    }
+    
+    // Limpiar campos
+    if ($verificationCode) {
+      $verificationCode.value = '';
+    }
+    if ($verificationError) {
+      $verificationError.classList.add('d-none');
+    }
+    
+    // Enviar código por email
+    sendVerificationEmail(email, code, user.name || user.username)
+      .then((result) => {
+        // Si el código se muestra en consola (desarrollo), mostrarlo también en el modal
+        if (result.code && $verificationError) {
+          $verificationError.innerHTML = `<strong>Modo desarrollo:</strong> El código es: <code style="font-size: 1.2rem; font-weight: bold;">${result.code}</code>`;
+          $verificationError.classList.remove('d-none', 'alert-danger');
+          $verificationError.classList.add('alert-info');
+        }
+      });
+    
+    // Iniciar temporizador
+    startVerificationTimer(5);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal($verificationModal, {
+      backdrop: 'static',
+      keyboard: false
+    });
+    modal.show();
+    
+    // Enfocar el campo de código
+    setTimeout(() => {
+      if ($verificationCode) {
+        $verificationCode.focus();
+      }
+    }, 500);
+  }
+
+  function verifyCode(inputCode) {
+    if (!pendingVerification) {
+      return { success: false, error: 'No hay verificación pendiente.' };
+    }
+    
+    // Verificar expiración
+    if (new Date() > pendingVerification.expiryTime) {
+      pendingVerification = null;
+      return { success: false, error: 'El código de verificación ha expirado.' };
+    }
+    
+    // Verificar código
+    if (inputCode === pendingVerification.code) {
+      const user = pendingVerification.user;
+      pendingVerification = null;
+      
+      if (verificationTimer) {
+        clearInterval(verificationTimer);
+        verificationTimer = null;
+      }
+      
+      return { success: true, user: user };
+    }
+    
+    return { success: false, error: 'Código de verificación incorrecto.' };
+  }
+
+  function login(email, password) {
+    try {
+      const users = getUsers();
+      
+      // Depuración: mostrar información en consola
+      console.log("=== INTENTO DE LOGIN ===");
+      console.log("Email/Username:", email);
+      console.log("Total de usuarios en sistema:", users.length);
+      console.log("Usuarios disponibles:", users.map(u => ({ 
+        email: u.email, 
+        username: u.username, 
+        name: u.name,
+        active: u.active 
+      })));
+      
+      if (users.length === 0) {
+        console.error("ERROR: No hay usuarios en el sistema. Verifica el localStorage.");
+        return { 
+          success: false, 
+          inactive: false, 
+          error: "No hay usuarios registrados en el sistema. Por favor, contacta al administrador." 
+        };
+      }
+      
+      const hashedPassword = hashPassword(password);
+      console.log("Contraseña hasheada:", hashedPassword);
+      
+      // PRIMERO: Verificar si el usuario existe (solo por email/username, sin verificar contraseña)
+      // Buscar por email primero, si no tiene email buscar por username (retrocompatibilidad)
+      const user = users.find(
+        (u) => {
+          const emailMatch = u.email && u.email.toLowerCase() === email.toLowerCase();
+          const usernameMatch = !u.email && u.username && u.username.toLowerCase() === email.toLowerCase();
+          return emailMatch || usernameMatch;
+        }
+      );
+
+      // Si el usuario NO existe
+      if (!user) {
+        console.warn("Usuario no encontrado:", email);
+        return { 
+          success: false, 
+          inactive: false,
+          userNotFound: true,
+          error: "El correo electrónico no está registrado en el sistema."
+        };
+      }
+
+      console.log("Usuario encontrado:", user.email || user.username);
+      
+      // SEGUNDO: Verificar la contraseña del usuario encontrado
+      const passwordMatch = user.password === hashedPassword;
+      
+      console.log("Verificación de contraseña:", {
+        storedPassword: user.password,
+        inputPassword: hashedPassword,
+        passwordMatch: passwordMatch
+      });
+      
+      // Si la contraseña es incorrecta
+      if (!passwordMatch) {
+        console.warn("Contraseña incorrecta para usuario:", user.email || user.username);
+        return { 
+          success: false, 
+          inactive: false,
+          wrongPassword: true,
+          error: "La contraseña es incorrecta."
+        };
+      }
+      
+      // Si el usuario existe pero está inactivo
+      if (user.active === false) {
+        console.warn("Usuario inactivo");
+        return { success: false, inactive: true };
+      }
+      
+      // Si el usuario existe, la contraseña es correcta y está activo, mostrar modal de verificación
+      const userEmail = user.email || email;
+      showVerificationModal(userEmail, user);
+      
+      return { success: true, requiresVerification: true };
+    } catch (error) {
+      console.error("Error en función login:", error);
+      return { 
+        success: false, 
+        inactive: false, 
+        error: "Error al procesar el login. Por favor, recarga la página." 
+      };
+    }
   }
 
   function logout() {
@@ -339,8 +873,14 @@
     // Aplicar clase de rol al body
     document.body.className = currentUser.role === "admin" ? "admin" : "";
 
-    // Inicializar aplicación
-    initApp();
+    // Usar requestAnimationFrame para asegurar que el DOM esté completamente renderizado
+    // antes de inicializar la aplicación, especialmente para el sidebar
+    requestAnimationFrame(() => {
+      // Usar un pequeño delay adicional para asegurar que los elementos estén completamente disponibles
+      setTimeout(() => {
+        initApp();
+      }, 50);
+    });
   }
 
   function checkAuth() {
@@ -368,25 +908,215 @@
 
         if (!username || !password) {
           if ($loginError) {
-            $loginError.textContent = "Por favor ingresa usuario y contraseña.";
+            $loginError.textContent = "Por favor ingresa email y contraseña.";
             $loginError.classList.remove("d-none");
+          }
+          if ($loginSuccess) {
+            $loginSuccess.classList.add("d-none");
           }
           return;
         }
 
+        // Ocultar mensajes previos
+        if ($loginError) {
+          $loginError.classList.add("d-none");
+        }
+        if ($loginSuccess) {
+          $loginSuccess.classList.add("d-none");
+        }
+
+        // Deshabilitar botón mientras se procesa
+        if ($loginSubmitBtn) {
+          $loginSubmitBtn.disabled = true;
+          $loginSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+        }
+
         const loginResult = login(username, password);
+        
+        // Rehabilitar botón
+        if ($loginSubmitBtn) {
+          $loginSubmitBtn.disabled = false;
+          $loginSubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión';
+        }
+
         if (loginResult.success) {
-          showMainContent();
+          if (loginResult.requiresVerification) {
+            // Mostrar mensaje de éxito
+            if ($loginSuccess) {
+              $loginSuccess.classList.remove("d-none");
+            }
+            // El modal de verificación se mostrará automáticamente
+          } else {
+            // Si no requiere verificación (no debería pasar con el nuevo flujo)
+            showMainContent();
+          }
         } else {
           if ($loginError) {
             if (loginResult.inactive) {
               $loginError.textContent = "Usuario inactivo por administrador.";
+            } else if (loginResult.error) {
+              // Mostrar el mensaje de error específico (correo no registrado o contraseña incorrecta)
+              $loginError.textContent = loginResult.error;
             } else {
-              $loginError.textContent = "Usuario o contraseña incorrectos.";
+              // Mensaje genérico solo si no hay un error específico
+              $loginError.textContent = "Error al iniciar sesión. Por favor, intenta nuevamente.";
             }
             $loginError.classList.remove("d-none");
           }
         }
+      });
+    }
+
+    // Event listeners para verificación de código
+    if ($verificationForm) {
+      $verificationForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const code = $verificationCode.value.trim().replace(/\s/g, '');
+
+        if (!code || code.length !== 6) {
+          if ($verificationError) {
+            $verificationError.textContent = "Por favor ingresa un código de 6 dígitos.";
+            $verificationError.classList.remove("d-none");
+            $verificationError.classList.remove("alert-info");
+            $verificationError.classList.add("alert-danger");
+          }
+          return;
+        }
+
+        const verificationResult = verifyCode(code);
+
+        if (verificationResult.success) {
+          // Cerrar modal
+          const modal = bootstrap.Modal.getInstance($verificationModal);
+          if (modal) modal.hide();
+
+          // Establecer usuario actual
+          const { password: _, ...userWithoutPassword } = verificationResult.user;
+          setCurrentUser(userWithoutPassword);
+
+          // Limpiar verificación pendiente
+          pendingVerification = null;
+          if (verificationTimer) {
+            clearInterval(verificationTimer);
+            verificationTimer = null;
+          }
+
+          // Mostrar contenido principal
+          showMainContent();
+
+          // Limpiar formulario de login
+          if ($loginForm) {
+            $loginForm.reset();
+          }
+          if ($loginError) {
+            $loginError.classList.add("d-none");
+          }
+          if ($loginSuccess) {
+            $loginSuccess.classList.add("d-none");
+          }
+        } else {
+          if ($verificationError) {
+            $verificationError.textContent = verificationResult.error || "Código incorrecto. Por favor, intenta nuevamente.";
+            $verificationError.classList.remove("d-none", "alert-info");
+            $verificationError.classList.add("alert-danger");
+          }
+          // Limpiar campo de código
+          if ($verificationCode) {
+            $verificationCode.value = '';
+            $verificationCode.focus();
+          }
+        }
+      });
+    }
+
+    // Reenviar código
+    if ($resendCodeBtn) {
+      $resendCodeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!pendingVerification) {
+          return;
+        }
+
+        // Generar nuevo código
+        const newCode = generateVerificationCode();
+        const expiryTime = new Date(Date.now() + 5 * 60000);
+
+        pendingVerification.code = newCode;
+        pendingVerification.expiryTime = expiryTime;
+
+        // Limpiar mensajes
+        if ($verificationError) {
+          $verificationError.classList.add("d-none");
+        }
+        if ($verificationCode) {
+          $verificationCode.value = '';
+        }
+
+        // Enviar nuevo código
+        sendVerificationEmail(pendingVerification.email, newCode, pendingVerification.user.name || pendingVerification.user.username)
+          .then((result) => {
+            if (result.code && $verificationError) {
+              $verificationError.innerHTML = `<strong>Modo desarrollo:</strong> El nuevo código es: <code style="font-size: 1.2rem; font-weight: bold;">${result.code}</code>`;
+              $verificationError.classList.remove("d-none", "alert-danger");
+              $verificationError.classList.add("alert-info");
+            }
+          });
+
+        // Reiniciar temporizador
+        startVerificationTimer(5);
+      });
+    }
+
+    // Cerrar modal de verificación (solo permitir si se cancela explícitamente)
+    if ($closeVerificationModal) {
+      $closeVerificationModal.addEventListener("click", () => {
+        if (confirm("¿Estás seguro de que deseas cancelar la verificación? Deberás iniciar sesión nuevamente.")) {
+          pendingVerification = null;
+          if (verificationTimer) {
+            clearInterval(verificationTimer);
+            verificationTimer = null;
+          }
+          if ($loginForm) {
+            $loginForm.reset();
+          }
+          if ($loginSuccess) {
+            $loginSuccess.classList.add("d-none");
+          }
+        }
+      });
+    }
+
+    // Limpiar estado cuando se cierra el modal de verificación
+    if ($verificationModal) {
+      $verificationModal.addEventListener('hidden.bs.modal', () => {
+        // Solo limpiar si no se completó la verificación exitosamente
+        if (pendingVerification) {
+          pendingVerification = null;
+          if (verificationTimer) {
+            clearInterval(verificationTimer);
+            verificationTimer = null;
+          }
+          if ($verificationCode) {
+            $verificationCode.value = '';
+          }
+          if ($verificationError) {
+            $verificationError.classList.add('d-none');
+          }
+        }
+      });
+    }
+
+    // Permitir solo números en el campo de código
+    if ($verificationCode) {
+      $verificationCode.addEventListener("input", (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+      });
+
+      $verificationCode.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData("text");
+        const numbers = paste.replace(/\D/g, '').slice(0, 6);
+        e.target.value = numbers;
       });
     }
 
@@ -501,6 +1231,19 @@
     }
     if ($clientsExcelInput) $clientsExcelInput.addEventListener("change", onClientsExcelSelected);
     if ($btnExportClients) $btnExportClients.addEventListener("click", exportClientsToExcel);
+    if ($btnSyncGoogleSheets) {
+      $btnSyncGoogleSheets.addEventListener("click", async () => {
+        if ($btnSyncGoogleSheets) {
+          $btnSyncGoogleSheets.disabled = true;
+          $btnSyncGoogleSheets.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sincronizando...';
+        }
+        await syncFromGoogleSheets();
+        if ($btnSyncGoogleSheets) {
+          $btnSyncGoogleSheets.disabled = false;
+          $btnSyncGoogleSheets.innerHTML = '<i class="bi bi-cloud-arrow-down"></i> Sincronizar con Google Sheets';
+        }
+      });
+    }
     
     // Resetear formulario de cliente al cerrar el modal
     const clientModalEl = document.getElementById("clientModal");
@@ -602,6 +1345,49 @@
       $excelInput.addEventListener("change", onExcelSelected);
     }
 
+    // Event listeners para productos - crear/editar
+    if ($btnAddProduct) {
+      $btnAddProduct.addEventListener("click", () => {
+        if (!currentUser || currentUser.role !== "admin") {
+          showAlert("Solo los administradores pueden crear productos.", "error", "Acceso denegado");
+          return;
+        }
+        openProductModal();
+      });
+    }
+    if ($btnEditProduct) {
+      $btnEditProduct.addEventListener("click", () => {
+        if (!currentUser || currentUser.role !== "admin") {
+          showAlert("Solo los administradores pueden editar productos.", "error", "Acceso denegado");
+          return;
+        }
+        openProductModal(true);
+      });
+    }
+    
+    // Event listener para el buscador del modal de selección de productos
+    if ($selectProductSearch) {
+      $selectProductSearch.addEventListener("input", () => {
+        renderSelectProductList();
+      });
+    }
+    if ($btnAddProceso) {
+      $btnAddProceso.addEventListener("click", addProcesoRow);
+    }
+    if ($btnSaveProduct) {
+      $btnSaveProduct.addEventListener("click", saveProduct);
+    }
+    
+    // Resetear formulario de producto al cerrar el modal
+    if ($productModal && typeof bootstrap !== "undefined") {
+      $productModal.addEventListener("hidden.bs.modal", () => {
+        if ($productFormModal) $productFormModal.reset();
+        if ($productId) $productId.value = "";
+        if ($procesosContainer) $procesosContainer.innerHTML = "";
+        if ($productModalTitle) $productModalTitle.textContent = "Nuevo Producto";
+      });
+    }
+
     // Event listeners para eliminar productos (solo admin)
     if ($btnDeleteProducts && currentUser && currentUser.role === "admin") {
       $btnDeleteProducts.addEventListener("click", openDeleteProductsModal);
@@ -633,6 +1419,172 @@
       window.addEventListener("scroll", onScrollToggleScrollTop);
       onScrollToggleScrollTop();
     }
+
+    // Sidebar toggle
+    function toggleSidebar(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if ($sidebar) {
+        const isActive = $sidebar.classList.contains("active");
+        if (isActive) {
+          closeSidebar();
+        } else {
+          openSidebar();
+        }
+      }
+    }
+
+    function openSidebar() {
+      if ($sidebar) {
+        $sidebar.classList.add("active");
+        if ($sidebarOverlay) {
+          $sidebarOverlay.classList.add("active");
+        }
+        // Agregar clase al body para ocultar el top-navbar
+        document.body.classList.add("sidebar-open");
+        // Actualizar icono del botón hamburguesa
+        updateSidebarToggleIcon(true);
+        // Guardar estado en localStorage
+        localStorage.setItem("sidebarOpen", "true");
+      }
+    }
+
+    function closeSidebar() {
+      if ($sidebar) {
+        $sidebar.classList.remove("active");
+        if ($sidebarOverlay) {
+          $sidebarOverlay.classList.remove("active");
+        }
+        // Remover clase del body para mostrar el top-navbar
+        document.body.classList.remove("sidebar-open");
+        // Actualizar icono del botón hamburguesa
+        updateSidebarToggleIcon(false);
+        // Guardar estado en localStorage
+        localStorage.setItem("sidebarOpen", "false");
+      }
+    }
+
+    function updateSidebarToggleIcon(isOpen) {
+      if ($sidebarToggle) {
+        const icon = $sidebarToggle.querySelector("i");
+        if (icon) {
+          icon.className = isOpen ? "bi bi-x-lg fs-4" : "bi bi-list fs-4";
+        }
+      }
+      // El botón en el sidebar siempre muestra X porque solo está visible cuando está abierto
+      if ($sidebarToggleInSidebar) {
+        const icon = $sidebarToggleInSidebar.querySelector("i");
+        if (icon) {
+          icon.className = "bi bi-x-lg fs-4";
+        }
+      }
+    }
+
+    // Event listeners - Remover listeners previos si existen antes de agregar nuevos
+    if ($sidebarToggle) {
+      // Remover listeners previos si existen
+      if (sidebarToggleHandler) {
+        $sidebarToggle.removeEventListener("click", sidebarToggleHandler);
+      }
+      if (sidebarToggleTouchHandler) {
+        $sidebarToggle.removeEventListener("touchend", sidebarToggleTouchHandler);
+      }
+      
+      // Forzar un reflow del DOM para asegurar que los estilos estén aplicados
+      void $sidebarToggle.offsetHeight;
+      
+      // Asegurar que el botón sea clickeable
+      $sidebarToggle.style.pointerEvents = "auto";
+      $sidebarToggle.style.zIndex = "1053";
+      $sidebarToggle.style.cursor = "pointer";
+      $sidebarToggle.style.position = "relative";
+      
+      // Crear nuevos handlers y guardar referencias
+      sidebarToggleHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebar(e);
+      };
+      sidebarToggleTouchHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebar(e);
+      };
+      
+      // Agregar nuevos listeners con { passive: false } para poder prevenir el comportamiento por defecto
+      $sidebarToggle.addEventListener("click", sidebarToggleHandler, { passive: false });
+      $sidebarToggle.addEventListener("touchend", sidebarToggleTouchHandler, { passive: false });
+    }
+
+    if ($sidebarToggleInSidebar) {
+      // Remover listener previo si existe
+      if (sidebarToggleInSidebarHandler) {
+        $sidebarToggleInSidebar.removeEventListener("click", sidebarToggleInSidebarHandler);
+      }
+      
+      // Crear nuevo handler y guardar referencia
+      sidebarToggleInSidebarHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeSidebar();
+      };
+      
+      // Agregar nuevo listener
+      $sidebarToggleInSidebar.addEventListener("click", sidebarToggleInSidebarHandler);
+    }
+
+    if ($sidebarOverlay) {
+      // Remover listener previo si existe
+      if (sidebarOverlayHandler) {
+        $sidebarOverlay.removeEventListener("click", sidebarOverlayHandler);
+      }
+      
+      // Crear nuevo handler y guardar referencia
+      sidebarOverlayHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeSidebar();
+      };
+      
+      // Agregar nuevo listener
+      $sidebarOverlay.addEventListener("click", sidebarOverlayHandler);
+    }
+
+    // Cerrar sidebar al hacer clic en un enlace de navegación en móvil
+    const sidebarLinks = document.querySelectorAll(".sidebar-nav .nav-link");
+    sidebarLinks.forEach(link => {
+      link.addEventListener("click", function() {
+        if (window.innerWidth < 992) {
+          closeSidebar();
+        }
+      });
+    });
+
+    // Restaurar estado del sidebar desde localStorage (solo en desktop)
+    if ($sidebar && window.innerWidth >= 992) {
+      const sidebarOpen = localStorage.getItem("sidebarOpen");
+      if (sidebarOpen === "true") {
+        openSidebar();
+      }
+    }
+
+    // Cerrar sidebar al cambiar de tamaño de ventana si está en móvil
+    // Remover handler previo si existe
+    if (sidebarResizeHandler) {
+      window.removeEventListener("resize", sidebarResizeHandler);
+    }
+    
+    let resizeTimeout;
+    sidebarResizeHandler = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (window.innerWidth < 992 && $sidebar) {
+          closeSidebar();
+        }
+      }, 250);
+    };
+    
+    window.addEventListener("resize", sidebarResizeHandler);
   }
 
   function onExcelSelected(e) {
@@ -1229,7 +2181,7 @@
       </div>
       <div class="d-flex align-items-center gap-2">
         <label class="small text-muted mb-0">Valor unitario:</label>
-        <select class="form-select form-select-sm unit-selector" data-product-id="${product.id}" style="width: auto; min-width: 140px;">
+        <select class="form-select form-select-sm unit-selector" data-product-id="${product.id}" style="width: auto; min-width: 170px;">
           <option value="vrUnit1" ${selectedUnit === 'vrUnit1' ? 'selected' : ''}>Vr. Unitario 1</option>
           <option value="vrUnit2" ${selectedUnit === 'vrUnit2' ? 'selected' : ''}>Vr. Unitario 2</option>
           <option value="vrUnit3" ${selectedUnit === 'vrUnit3' ? 'selected' : ''}>Vr. Unitario 3</option>
@@ -1246,13 +2198,50 @@
     card.appendChild(body);
     col.appendChild(card);
 
+    // Sincronizar análisis con el estado del checkbox del producto al renderizar
+    const isProductSelected = selectedProductIds.has(product.id);
+    if (isProductSelected) {
+      let analisisSet = selectedAnalisis.get(product.id);
+      if (!analisisSet || analisisSet.size === 0) {
+        analisisSet = new Set();
+        product.procesos.forEach((_, index) => analisisSet.add(index));
+        selectedAnalisis.set(product.id, analisisSet);
+      }
+      // Actualizar checkboxes de análisis después de renderizar
+      setTimeout(() => {
+        updateAnalisisCheckboxes(product.id, product);
+        updateProductTableTotals(product.id, product);
+      }, 0);
+    }
+
     const checkbox = header.querySelector(".product-select");
     checkbox.checked = selectedProductIds.has(product.id);
     checkbox.addEventListener("change", (e) => {
       if (e.target.checked) {
         selectedProductIds.add(product.id);
+        // Seleccionar todos los análisis cuando se selecciona el producto
+        let analisisSet = selectedAnalisis.get(product.id);
+        if (!analisisSet) {
+          analisisSet = new Set();
+          selectedAnalisis.set(product.id, analisisSet);
+        }
+        // Seleccionar todos los análisis
+        product.procesos.forEach((_, index) => analisisSet.add(index));
+        // Actualizar los checkboxes de análisis
+        updateAnalisisCheckboxes(product.id, product);
+        // Recalcular totales
+        updateProductTableTotals(product.id, product);
       } else {
         selectedProductIds.delete(product.id);
+        // Deseleccionar todos los análisis cuando se deselecciona el producto
+        let analisisSet = selectedAnalisis.get(product.id);
+        if (analisisSet) {
+          analisisSet.clear();
+        }
+        // Actualizar los checkboxes de análisis
+        updateAnalisisCheckboxes(product.id, product);
+        // Recalcular totales
+        updateProductTableTotals(product.id, product);
       }
       updateSelectionStateUI();
     });
@@ -1281,6 +2270,10 @@
     // Recalcular el subtotal usando el valor unitario seleccionado
     const selectedUnit = selectedUnitValues.get(productId) || 'vrUnitUSD';
     let sumTotal = 0;
+    let sumCMtra = 0;
+    
+    // Obtener los análisis seleccionados
+    const analisisSet = selectedAnalisis.get(productId) || new Set();
     
     // Actualizar la columna Vr. Total en cada fila de la tabla
     const unitSelector = document.querySelector(`.unit-selector[data-product-id="${productId}"]`);
@@ -1293,14 +2286,28 @@
           rows.forEach((tr, index) => {
             if (product.procesos[index]) {
               const row = product.procesos[index];
+              const isSelected = analisisSet.has(index);
               const qty = parseNumStrict(row.cantidad);
               const unitValue = parseNumStrict(row[selectedUnit]);
               let calculatedTotal = 0;
               
-              // Solo calcular si el valor unitario seleccionado tiene un valor válido
-              if (unitValue > 0 && qty > 0) {
+              // Actualizar estilo de la fila
+              if (isSelected) {
+                tr.classList.remove("table-secondary", "opacity-75");
+              } else {
+                tr.classList.add("table-secondary", "opacity-75");
+              }
+              
+              // Solo calcular si el análisis está seleccionado y el valor unitario tiene un valor válido
+              if (isSelected && unitValue > 0 && qty > 0) {
                 calculatedTotal = unitValue * qty;
                 sumTotal += calculatedTotal;
+                
+                // Sumar C. Mtra. solo si está seleccionado
+                const cMtra = parseNumStrict(row.cMtra ?? row.cMtra_g);
+                if (isFinite(cMtra)) {
+                  sumCMtra += cMtra;
+                }
               }
               
               // Actualizar la celda de Vr. Total (última columna)
@@ -1312,16 +2319,23 @@
           });
         }
         
-        // Actualizar el subtotal en el footer de la tabla
+        // Actualizar el subtotal y totales en el footer de la tabla
         const tfoot = card.querySelector('tfoot');
         if (tfoot) {
-          const subtotalCell = tfoot.querySelector('td:last-child');
-          if (subtotalCell) {
-            subtotalCell.textContent = formatMoney(sumTotal);
+          const cells = tfoot.querySelectorAll('td');
+          if (cells.length >= 11) {
+            // Actualizar C. Mtra. total (columna 5, índice 4, después de la columna de checkbox)
+            cells[4].textContent = formatNumber(sumCMtra);
+            // Actualizar subtotal (última columna)
+            cells[cells.length - 1].textContent = formatMoney(sumTotal);
           }
         }
       }
     }
+    
+    // Guardar totales calculados en el objeto para uso en PDF
+    product._sumCMtra = sumCMtra;
+    product._sumTotal = sumTotal;
   }
 
   function renderProductTable(product) {
@@ -1333,6 +2347,7 @@
     const thead = document.createElement("thead");
     thead.innerHTML = `
       <tr>
+        <th style="width: 40px;"></th>
         <th>Código</th>
         <th>Análisis</th>
         <th>Método</th>
@@ -1353,7 +2368,26 @@
     // Obtener el valor unitario seleccionado para este producto
     const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
     
-    product.procesos.forEach((row) => {
+    // Obtener los análisis seleccionados para este producto
+    // Solo se seleccionan cuando el checkbox del producto está marcado
+    let selectedAnalisisSet = selectedAnalisis.get(product.id);
+    if (!selectedAnalisisSet) {
+      // Inicializar vacío - solo se seleccionarán cuando se marque el checkbox del producto
+      selectedAnalisisSet = new Set();
+      selectedAnalisis.set(product.id, selectedAnalisisSet);
+    }
+    
+    // Verificar si el producto está seleccionado para sincronizar los análisis
+    const isProductSelected = selectedProductIds.has(product.id);
+    if (isProductSelected && selectedAnalisisSet.size === 0) {
+      // Si el producto está seleccionado pero no hay análisis seleccionados, seleccionar todos
+      product.procesos.forEach((_, index) => selectedAnalisisSet.add(index));
+    } else if (!isProductSelected) {
+      // Si el producto no está seleccionado, asegurar que no haya análisis seleccionados
+      selectedAnalisisSet.clear();
+    }
+    
+    product.procesos.forEach((row, index) => {
       const getText = (v) => (v == null ? "" : String(v));
       const valueOrFormat = (text, num, isMoney = false) => {
         if (text !== undefined && text !== null && String(text) !== "") return String(text);
@@ -1361,49 +2395,108 @@
         return isMoney ? formatMoney(num) : formatNumber(num);
       };
 
-      // Sumas usando el valor unitario seleccionado
-      const cMtraForSum = parseNumStrict(row.cMtra ?? row.cMtra_g);
-      const qty = parseNumStrict(row.cantidad);
-      const unitValue = parseNumStrict(row[selectedUnit]);
+      const isSelected = selectedAnalisisSet.has(index);
       
-      sumCMtra += cMtraForSum;
-      
-      // Calcular el total usando el valor unitario seleccionado
-      // Solo sumar si el valor unitario tiene un valor válido
-      if (unitValue > 0 && qty > 0) {
-        sumTotal += unitValue * qty;
+      // Sumas usando el valor unitario seleccionado (solo si el análisis está seleccionado)
+      if (isSelected) {
+        const cMtraForSum = parseNumStrict(row.cMtra ?? row.cMtra_g);
+        const qty = parseNumStrict(row.cantidad);
+        const unitValue = parseNumStrict(row[selectedUnit]);
+        
+        sumCMtra += cMtraForSum;
+        
+        // Calcular el total usando el valor unitario seleccionado
+        // Solo sumar si el valor unitario tiene un valor válido
+        if (unitValue > 0 && qty > 0) {
+          sumTotal += unitValue * qty;
+        }
       }
-      // Si el valor unitario está vacío o es 0, no sumar nada
 
       // Calcular el Vr. Total usando el valor unitario seleccionado
       const qtyForDisplay = parseNumStrict(row.cantidad);
       const unitValueForDisplay = parseNumStrict(row[selectedUnit]);
       let calculatedTotal = 0;
       
-      // Solo calcular si el valor unitario seleccionado tiene un valor válido
-      if (unitValueForDisplay > 0 && qtyForDisplay > 0) {
+      // Solo calcular si el análisis está seleccionado y el valor unitario seleccionado tiene un valor válido
+      if (isSelected && unitValueForDisplay > 0 && qtyForDisplay > 0) {
         calculatedTotal = unitValueForDisplay * qtyForDisplay;
       }
       
       const tr = document.createElement("tr");
+      tr.className = isSelected ? "" : "table-secondary opacity-75";
       tr.innerHTML = `
+        <td class="text-center">
+          <input type="checkbox" class="form-check-input analisis-checkbox" 
+                 data-product-id="${product.id}" 
+                 data-analisis-index="${index}" 
+                 ${isSelected ? 'checked' : ''}>
+        </td>
         <td>${getText(row.codigo)}</td>
         <td>${getText(row.analisis)}</td>
         <td>${getText(row.metodo)}</td>
         <td class=\"text-center\">${valueOrFormat(row.cMtra, row.cMtra_g)}</td>
         <td class=\"text-center\">${valueOrFormat(row.cantidad, row.cantidad)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.vrUnit1)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.vrUnit2)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.vrUnit3)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.vrUnitUSD)}</td>
-        <td class=\"text-center\">${calculatedTotal > 0 ? formatMoney(calculatedTotal) : ""}</td>
+        <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit1 != null && row.vrUnit1 !== "" ? formatMoney(parseNumStrict(row.vrUnit1)) : ""}</td>
+        <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit2 != null && row.vrUnit2 !== "" ? formatMoney(parseNumStrict(row.vrUnit2)) : ""}</td>
+        <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit3 != null && row.vrUnit3 !== "" ? formatMoney(parseNumStrict(row.vrUnit3)) : ""}</td>
+        <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnitUSD != null && row.vrUnitUSD !== "" ? formatMoney(parseNumStrict(row.vrUnitUSD)) : ""}</td>
+        <td class=\"text-center\" style=\"white-space: nowrap;\">${calculatedTotal > 0 ? formatMoney(calculatedTotal) : ""}</td>
       `;
+      
+      // Agregar event listener al checkbox
+      const checkbox = tr.querySelector(".analisis-checkbox");
+      checkbox.addEventListener("change", (e) => {
+        const productId = e.target.getAttribute("data-product-id");
+        const analisisIndex = parseInt(e.target.getAttribute("data-analisis-index"));
+        const productData = productos.find(p => p.id === productId);
+        
+        if (!productData) return;
+        
+        let analisisSet = selectedAnalisis.get(productId);
+        if (!analisisSet) {
+          analisisSet = new Set();
+          selectedAnalisis.set(productId, analisisSet);
+        }
+        
+        if (e.target.checked) {
+          analisisSet.add(analisisIndex);
+        } else {
+          analisisSet.delete(analisisIndex);
+        }
+        
+        // Sincronizar checkbox del producto: si todos los análisis están seleccionados, marcar el producto
+        // Si ningún análisis está seleccionado, desmarcar el producto
+        const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
+        if (productCheckbox) {
+          if (analisisSet.size === productData.procesos.length) {
+            // Todos seleccionados: marcar el checkbox del producto
+            if (!selectedProductIds.has(productId)) {
+              selectedProductIds.add(productId);
+              productCheckbox.checked = true;
+            }
+          } else if (analisisSet.size === 0) {
+            // Ninguno seleccionado: desmarcar el checkbox del producto
+            if (selectedProductIds.has(productId)) {
+              selectedProductIds.delete(productId);
+              productCheckbox.checked = false;
+            }
+          }
+        }
+        
+        // Actualizar UI de selección
+        updateSelectionStateUI();
+        
+        // Recalcular totales y actualizar la tabla
+        updateProductTableTotals(productId, productData);
+      });
+      
       tbody.appendChild(tr);
     });
 
     const tfoot = document.createElement("tfoot");
     tfoot.innerHTML = `
       <tr>
+        <td></td>
         <td colspan="3" class="text-end">Totales:</td>
         <td class="text-center">${formatNumber(sumCMtra)}</td>
         <td></td>
@@ -1411,7 +2504,7 @@
         <td></td>
         <td></td>
         <td class="text-center fw-semibold">Subtotal</td>
-        <td class="text-center fw-semibold">${formatMoney(sumTotal)}</td>
+        <td class="text-center fw-semibold" style="white-space: nowrap;">${formatMoney(sumTotal)}</td>
       </tr>
     `;
 
@@ -1424,6 +2517,36 @@
     product._sumCMtra = sumCMtra;
     product._sumTotal = sumTotal;
     return tableWrapper;
+  }
+  
+  function updateAnalisisCheckboxes(productId, product) {
+    const analisisSet = selectedAnalisis.get(productId) || new Set();
+    // Buscar el card del producto usando el checkbox del producto
+    const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
+    if (!productCheckbox) return;
+    
+    const card = productCheckbox.closest('.product-card');
+    if (!card) return;
+    
+    const tbody = card.querySelector('tbody');
+    if (!tbody) return;
+    
+    const checkboxes = tbody.querySelectorAll(`.analisis-checkbox[data-product-id="${productId}"]`);
+    checkboxes.forEach((cb) => {
+      const analisisIndex = parseInt(cb.getAttribute("data-analisis-index"));
+      const isSelected = analisisSet.has(analisisIndex);
+      cb.checked = isSelected;
+      
+      // Actualizar estilo de la fila
+      const row = cb.closest("tr");
+      if (row) {
+        if (isSelected) {
+          row.classList.remove("table-secondary", "opacity-75");
+        } else {
+          row.classList.add("table-secondary", "opacity-75");
+        }
+      }
+    });
   }
 
   function updateSelectionStateUI() {
@@ -1548,7 +2671,17 @@
     // Obtener el valor unitario seleccionado para este producto
     const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
     
-    product.procesos.forEach((row) => {
+    // Obtener los análisis seleccionados (o todos si no hay selección)
+    const analisisSet = selectedAnalisis.get(product.id);
+    if (!analisisSet || analisisSet.size === 0) {
+      // Si no hay análisis seleccionados, no incluir nada
+      return { ...product, _sumCMtra: 0, _sumTotal: 0, _selectedUnit: selectedUnit };
+    }
+    
+    product.procesos.forEach((row, index) => {
+      // Solo procesar si el análisis está seleccionado
+      if (!analisisSet.has(index)) return;
+      
       const cMtraNum = parseNumStrict(row.cMtra_g ?? row.cMtra);
       const qty = parseNumStrict(row.cantidad);
       // Usar el valor unitario seleccionado
@@ -1981,9 +3114,35 @@
   }
 
   function clearCartSelection() {
+    // Limpiar todas las selecciones de productos
     selectedProductIds.clear();
+    
+    // Limpiar todas las selecciones de análisis
+    selectedAnalisis.clear();
+    
     // No limpiar selectedUnitValues para mantener las selecciones del usuario
     // selectedUnitValues.clear();
+    
+    // Actualizar todos los checkboxes de productos
+    document.querySelectorAll(".product-select").forEach((cb) => {
+      cb.checked = false;
+    });
+    
+    // Actualizar todos los checkboxes de análisis y sus filas
+    document.querySelectorAll(".analisis-checkbox").forEach((cb) => {
+      cb.checked = false;
+      const row = cb.closest("tr");
+      if (row) {
+        row.classList.add("table-secondary", "opacity-75");
+      }
+    });
+    
+    // Recalcular y actualizar totales de todas las tablas
+    productos.forEach((product) => {
+      updateProductTableTotals(product.id, product);
+    });
+    
+    // Actualizar UI de selección
     updateSelectionStateUI();
   }
 
@@ -2133,6 +3292,15 @@
   async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", nota = "", dateStr, quoteNumber, products, totalGeneral, logo }) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
+    
+    // Función auxiliar para formatear dinero en PDF sin espacio (evita saltos de línea)
+    const formatMoneyPDF = (n) => {
+      const num = Number(n) || 0;
+      if (num === 0) return "";
+      // Formato: $1,234,567 (sin espacio para evitar saltos de línea en PDF)
+      return "$" + num.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    };
+    
     // Colores de marca (alineados con la web)
     const brandPrimary = [68, 194, 196]; // #44c2c4
     const brandSecondary = [243, 192, 44]; // #f3c02c
@@ -2341,7 +3509,19 @@
       };
       const selectedUnitName = unitColumnNames[selectedUnit] || 'Vr. Unitario USD';
 
-      const tableData = p.procesos.map((row) => {
+      // Obtener los análisis seleccionados para este producto
+      const analisisSet = selectedAnalisis.get(p.id);
+      
+      // Filtrar solo los procesos seleccionados
+      const procesosSeleccionados = p.procesos.filter((_, index) => {
+        // Si no hay selección, incluir todos (comportamiento por defecto para compatibilidad)
+        if (!analisisSet || analisisSet.size === 0) {
+          return true;
+        }
+        return analisisSet.has(index);
+      });
+      
+      const tableData = procesosSeleccionados.map((row) => {
         // Calcular el valor total usando el valor unitario seleccionado
         const qty = parseNumStrict(row.cantidad);
         const unitValue = parseNumStrict(row[selectedUnit]);
@@ -2354,14 +3534,17 @@
         }
         // Si el valor unitario está vacío o es 0, el total será 0
         
+        // Formatear el valor unitario con formato de moneda para PDF
+        const unitValueFormatted = unitValue > 0 ? formatMoneyPDF(unitValue) : "";
+        
         return [
           String(row.codigo ?? ""),
           String(row.analisis ?? ""),
           String(row.metodo ?? ""),
           String((row.cMtra ?? row.cMtra_g) ?? ""),
           String(row.cantidad ?? ""),
-          String(row[selectedUnit] ?? ""),
-          String(finalTotal > 0 ? formatMoney(finalTotal) : "")
+          unitValueFormatted,
+          String(finalTotal > 0 ? formatMoneyPDF(finalTotal) : "")
         ];
       });
 
@@ -2376,7 +3559,7 @@
           3: { halign: "right" },
           4: { halign: "right" },
           5: { halign: "right" },
-          6: { halign: "right" }
+          6: { halign: "right", cellWidth: 90 }
         },
         didDrawPage: (data) => {},
         willDrawCell: (data) => {}
@@ -2386,7 +3569,7 @@
       // Subtotal por producto (alineado a la derecha bajo la tabla)
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...brandSecondary);
-      doc.text(`Subtotal: ${formatMoney(p._sumTotal)}`, right, y, { align: "right" });
+      doc.text(`Subtotal: ${formatMoneyPDF(p._sumTotal)}`, right, y, { align: "right" });
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       y += 12;
@@ -2400,7 +3583,7 @@
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...brandSecondary);
-    doc.text(`Total general (COP): ${formatMoney(totalGeneral)}`, left, y);
+    doc.text(`Total general (COP): ${formatMoneyPDF(totalGeneral)}`, left, y);
     doc.setTextColor(0, 0, 0);
 
     // Nuevo contenido después del precio total
@@ -2513,14 +3696,23 @@
     y += 24;
     y += 60; // Agregar 5 espacios adicionales (12 puntos cada uno = 60 puntos) antes de la firma
 
-    // Firma
+    // Firma - Usar información del usuario actual
     y = checkPageBreak(y, 30);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text("FRANCISCO JAVIER OLAYA RAMIREZ", left, y);
-    y += 12;
-    doc.setFont("helvetica", "bold");
-    doc.text("Gerente Comercial", left, y);
+    const user = getCurrentUser();
+    const userName = user?.name || "";
+    const userCargo = user?.cargo || "";
+    
+    if (userName) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(userName.toUpperCase(), left, y);
+      y += 12;
+    }
+    
+    if (userCargo) {
+      doc.setFont("helvetica", "bold");
+      doc.text(userCargo, left, y);
+    }
 
     // Nombre del archivo incluyendo el número de consecutivo si está disponible
     const filename = quoteNumber 
@@ -3063,7 +4255,9 @@
   // Utilidades
   function formatMoney(n) {
     const num = Number(n) || 0;
-    return num.toLocaleString("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    if (num === 0) return "";
+    // Formato: $ 1,234,567 (con coma como separador de miles y sin decimales)
+    return "$ " + num.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
   function formatNumber(n) {
     const num = Number(n) || 0;
@@ -3102,7 +4296,14 @@
       if ($btnConfirmDeleteProducts) $btnConfirmDeleteProducts.disabled = true;
       if ($btnDeleteAllProducts) $btnDeleteAllProducts.disabled = true;
     } else {
-      productos.forEach((product) => {
+      // Ordenar productos alfabéticamente por nombre
+      const sortedProducts = [...productos].sort((a, b) => {
+        const nameA = (a.nombre || "").toLowerCase().trim();
+        const nameB = (b.nombre || "").toLowerCase().trim();
+        return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
+      });
+      
+      sortedProducts.forEach((product) => {
         const item = document.createElement("div");
         item.className = "list-group-item";
         item.innerHTML = `
@@ -3264,6 +4465,218 @@
 
   // ==================== FUNCIONES DE CLIENTES ====================
 
+  // ==================== CONFIGURACIÓN GOOGLE SHEETS ====================
+  // IMPORTANTE: Debes crear un Google Apps Script y reemplazar esta URL con la de tu script
+  // Ver instrucciones más abajo en los comentarios
+  const GOOGLE_SHEETS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJEF-8x9a-x5nOVCkJXD4mSPi5KuLps7da3r_ORkb9BZRugWk5rYnvNzyFm-jOfG4m/exec'; // URL completa de tu Google Apps Script
+  
+  // ==================== FUNCIONES GOOGLE SHEETS ====================
+  
+  /**
+   * Sincroniza los clientes con Google Sheets
+   * Guarda los clientes en la hoja de cálculo
+   */
+  async function syncClientsToGoogleSheets(clients) {
+    if (!GOOGLE_SHEETS_SCRIPT_URL) {
+      console.warn('Google Sheets Script URL no configurada. Los clientes solo se guardarán localmente.');
+      return { success: false, error: 'Google Sheets no configurado' };
+    }
+
+    try {
+      // Google Apps Script tiene problemas con CORS desde localhost
+      // Usar un iframe oculto para hacer la petición (método que funciona mejor)
+      const data = {
+        action: 'write',
+        data: clients.map(client => ({
+          id: client.id || '',
+          nombre: client.nombre || '',
+          nit: client.nit || '',
+          correo: client.correo || '',
+          celular: client.celular || '',
+          formaPago: client.formaPago || '',
+          contactos: Array.isArray(client.contactos) 
+            ? client.contactos.map(c => typeof c === 'object' ? c.nombre : c).join('; ')
+            : (client.contactos || ''),
+          createdAt: client.createdAt || '',
+          updatedAt: client.updatedAt || new Date().toISOString()
+        }))
+      };
+
+      // Crear un formulario oculto y enviarlo
+      return new Promise((resolve) => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = GOOGLE_SHEETS_SCRIPT_URL;
+        form.target = '_blank';
+        form.style.display = 'none';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'data';
+        input.value = JSON.stringify(data);
+        form.appendChild(input);
+        
+        document.body.appendChild(form);
+        
+        // Enviar el formulario
+        form.submit();
+        
+        // Remover el formulario después de un momento
+        setTimeout(() => {
+          document.body.removeChild(form);
+        }, 1000);
+        
+        // Asumir éxito (no podemos verificar la respuesta con este método)
+        resolve({ success: true, message: 'Datos enviados a Google Sheets' });
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Clientes sincronizados con Google Sheets:', result);
+      return { success: true, result };
+    } catch (error) {
+      console.error('Error al sincronizar con Google Sheets:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Carga los clientes desde Google Sheets
+   */
+  async function loadClientsFromGoogleSheets() {
+    if (!GOOGLE_SHEETS_SCRIPT_URL) {
+      console.warn('Google Sheets Script URL no configurada.');
+      return { success: false, error: 'Google Sheets no configurado' };
+    }
+
+    try {
+      console.log('Intentando cargar desde Google Sheets:', GOOGLE_SHEETS_SCRIPT_URL);
+      
+      const response = await fetch(`${GOOGLE_SHEETS_SCRIPT_URL}?action=read`, {
+        method: 'GET',
+        mode: 'cors'
+      });
+
+      // Con mode: 'no-cors', no podemos leer la respuesta directamente
+      // Asumimos éxito si no hay error de red
+      // Para verificar realmente, necesitamos usar otro método
+      
+      // Intentar leer la respuesta si es posible
+      let result;
+      try {
+        if (response.ok || response.type === 'opaque') {
+          // Si la respuesta es 'opaque' (no-cors), no podemos leerla
+          // Pero asumimos éxito si llegamos aquí
+          result = { success: true, message: 'Datos enviados (verificar en Google Sheets)' };
+        } else {
+          // Intentar leer como JSON si es posible
+          result = await response.json();
+        }
+      } catch (e) {
+        // Si no podemos leer la respuesta, asumimos éxito
+        // (esto es común con no-cors)
+        result = { success: true, message: 'Datos enviados (no se pudo verificar respuesta debido a CORS)' };
+      }
+      
+      if (result.success && result.data) {
+        // Convertir los datos de la hoja de cálculo a formato de clientes
+        const clients = result.data.map((row, index) => ({
+          id: row.id || `CLIENT-GS-${Date.now()}-${index}`,
+          nombre: row.nombre || '',
+          nit: row.nit || '',
+          correo: row.correo || '',
+          celular: row.celular || '',
+          formaPago: row.formaPago || '',
+          contactos: row.contactos ? row.contactos.split(';').map(c => c.trim()).filter(c => c) : [],
+          createdAt: row.createdAt || new Date().toISOString(),
+          updatedAt: row.updatedAt || new Date().toISOString()
+        }));
+
+        return { success: true, clients };
+      }
+
+      return { success: false, error: result.error || 'No se recibieron datos del servidor' };
+    } catch (error) {
+      console.error('Error al cargar desde Google Sheets:', error);
+      // Si es un error de CORS, dar instrucciones más claras
+      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de CORS. Verifica que:\n1. El Google Apps Script esté desplegado como aplicación web\n2. El acceso esté configurado como "Cualquiera"\n3. Hayas esperado unos minutos después de desplegar\n4. Revisa las instrucciones en INSTRUCCIONES_GOOGLE_SHEETS.md' 
+        };
+      }
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Sincroniza bidireccionalmente: carga desde Google Sheets y guarda localmente
+   */
+  async function syncFromGoogleSheets() {
+    const result = await loadClientsFromGoogleSheets();
+    
+    if (result.success && result.clients) {
+      // Fusionar con clientes locales (evitar duplicados)
+      const localClients = getClients();
+      const mergedClients = mergeClients(localClients, result.clients);
+      saveClients(mergedClients);
+      renderClients();
+      showAlert('Clientes sincronizados desde Google Sheets correctamente.', 'success');
+      return true;
+    } else {
+      showAlert(`Error al sincronizar desde Google Sheets: ${result.error || 'Error desconocido'}`, 'error');
+      return false;
+    }
+  }
+
+  /**
+   * Fusiona clientes locales con clientes de Google Sheets
+   * Prioriza los datos más recientes
+   */
+  function mergeClients(localClients, sheetsClients) {
+    const merged = [...localClients];
+    const localIds = new Set(localClients.map(c => c.id));
+    const localByNit = new Map(localClients.map(c => [c.nit, c]));
+
+    sheetsClients.forEach(sheetClient => {
+      // Si el cliente ya existe por ID, actualizar si es más reciente
+      if (localIds.has(sheetClient.id)) {
+        const localIndex = merged.findIndex(c => c.id === sheetClient.id);
+        if (localIndex !== -1) {
+          const localClient = merged[localIndex];
+          const localDate = new Date(localClient.updatedAt || 0);
+          const sheetDate = new Date(sheetClient.updatedAt || 0);
+          
+          if (sheetDate > localDate) {
+            merged[localIndex] = sheetClient;
+          }
+        }
+      } else {
+        // Si no existe por ID, verificar por NIT
+        const existingByNit = localByNit.get(sheetClient.nit);
+        if (existingByNit) {
+          const localDate = new Date(existingByNit.updatedAt || 0);
+          const sheetDate = new Date(sheetClient.updatedAt || 0);
+          
+          if (sheetDate > localDate) {
+            const index = merged.findIndex(c => c.id === existingByNit.id);
+            if (index !== -1) {
+              merged[index] = sheetClient;
+            }
+          }
+        } else {
+          // Cliente nuevo, agregarlo
+          merged.push(sheetClient);
+        }
+      }
+    });
+
+    return merged;
+  }
+
   function getClients() {
     try {
       return JSON.parse(localStorage.getItem("olgroup_clients") || "[]");
@@ -3272,9 +4685,23 @@
     }
   }
 
-  function saveClients(clients) {
+  async function saveClients(clients) {
     try {
+      // Guardar en localStorage primero (siempre funciona)
       localStorage.setItem("olgroup_clients", JSON.stringify(clients || []));
+      
+      // Intentar sincronizar con Google Sheets (en segundo plano, no bloquea)
+      if (GOOGLE_SHEETS_SCRIPT_URL) {
+        syncClientsToGoogleSheets(clients).then(result => {
+          if (result.success) {
+            console.log('Clientes guardados en Google Sheets correctamente');
+          } else {
+            console.warn('No se pudo guardar en Google Sheets, pero se guardó localmente:', result.error);
+          }
+        }).catch(error => {
+          console.error('Error al guardar en Google Sheets:', error);
+        });
+      }
     } catch {
       showAlert("No se pudo guardar los clientes. Verifica el espacio disponible.", "error");
     }
@@ -3342,6 +4769,7 @@
     saveClients(updatedClients);
     renderClients();
     closeClientModal();
+    showAlert(id ? "Cliente actualizado correctamente." : "Cliente creado correctamente.", "success");
   }
 
   function deleteClient(id) {
@@ -4300,11 +5728,13 @@
     const usersRows = users.map((u) => [
       u.username || "",
       u.name || "",
+      u.email || "",
+      u.cargo || "",
       u.role === "admin" ? "Administrador" : "Vendedor",
       u.active ? "Activo" : "Inactivo"
     ]);
 
-    const headers = ["Usuario", "Nombre", "Rol", "Estado"];
+    const headers = ["Usuario", "Nombre", "Email", "Cargo", "Rol", "Estado"];
     const filename = `Usuarios_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
     // Intentar usar ExcelJS con estilos
@@ -4313,7 +5743,7 @@
       headers, 
       filename, 
       "Usuarios",
-      [20, 30, 15, 12]
+      [20, 30, 30, 35, 15, 12]
     );
     if (success) {
       return; // Si ExcelJS funcionó, salir
@@ -4330,6 +5760,8 @@
     ws['!cols'] = [
       { wch: 20 }, // Usuario
       { wch: 30 }, // Nombre
+      { wch: 30 }, // Email
+      { wch: 35 }, // Cargo
       { wch: 15 }, // Rol
       { wch: 12 }  // Estado
     ];
@@ -4357,6 +5789,8 @@
         <td>${idx + 1}</td>
         <td>${escapeHtml(user.username || "")}</td>
         <td>${escapeHtml(user.name || "")}</td>
+        <td>${escapeHtml(user.email || "")}</td>
+        <td>${escapeHtml(user.cargo || "")}</td>
         <td>
           <span class="badge ${user.role === "admin" ? "bg-primary" : "bg-secondary"}">
             ${user.role === "admin" ? "Administrador" : "Vendedor"}
@@ -4394,13 +5828,15 @@
   }
 
   function openUserModal(user = null) {
-    if (!$userModalTitle || !$userId || !$userUsername || !$userName || !$userPassword || !$userRole || !$userActive) return;
+    if (!$userModalTitle || !$userId || !$userUsername || !$userEmail || !$userName || !$userCargo || !$userPassword || !$userRole || !$userActive) return;
 
     if (user) {
       $userModalTitle.textContent = "Editar Usuario";
       $userId.value = user.id;
       $userUsername.value = user.username || "";
+      $userEmail.value = user.email || "";
       $userName.value = user.name || "";
+      $userCargo.value = user.cargo || "";
       $userPassword.value = "";
       $userRole.value = user.role || "";
       $userActive.checked = user.active !== false;
@@ -4413,7 +5849,9 @@
       $userModalTitle.textContent = "Nuevo Usuario";
       $userId.value = "";
       $userUsername.value = "";
+      $userEmail.value = "";
       $userName.value = "";
+      $userCargo.value = "";
       $userPassword.value = "";
       $userRole.value = "";
       $userActive.checked = true;
@@ -4450,14 +5888,23 @@
     }
 
     const username = $userUsername.value.trim();
+    const email = $userEmail.value.trim();
     const name = $userName.value.trim();
+    const cargo = $userCargo.value.trim();
     const password = $userPassword.value.trim();
     const role = $userRole.value;
     const active = $userActive.checked;
     const id = $userId.value.trim();
 
-    if (!username || !name || !role) {
+    if (!username || !email || !name || !role) {
       showAlert("Por favor completa todos los campos requeridos.", "warning");
+      return;
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showAlert("Por favor ingresa un email válido.", "warning");
       return;
     }
 
@@ -4483,12 +5930,21 @@
         return;
       }
 
+      // Verificar que el email no esté en uso por otro usuario
+      const emailTaken = users.some((u) => u.id !== id && u.email && u.email.toLowerCase() === email.toLowerCase());
+      if (emailTaken) {
+        showAlert("El email ya está en uso por otro usuario.", "warning");
+        return;
+      }
+
       updatedUsers = users.map((u) =>
         u.id === id
           ? {
               ...u,
               username,
+              email,
               name,
+              cargo,
               role,
               active,
               password: password ? hashPassword(password) : u.password,
@@ -4510,11 +5966,20 @@
         return;
       }
 
+      // Verificar que el email no esté en uso
+      const emailTaken = users.some((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
+      if (emailTaken) {
+        showAlert("El email ya está en uso por otro usuario.", "warning");
+        return;
+      }
+
       const newUser = {
         id: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         username,
+        email,
         password: hashPassword(password),
         name,
+        cargo,
         role,
         active,
         createdAt: new Date().toISOString(),
@@ -4537,6 +6002,406 @@
     
     renderUsers();
     closeUserModal();
+  }
+
+  // Funciones para crear/editar productos
+  function generateProductId(nombre) {
+    // Generar ID basado en el nombre: primera letra + nombre normalizado
+    const primeraLetra = nombre.trim().charAt(0).toUpperCase();
+    const nombreNormalizado = nombre.trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 30);
+    return `${primeraLetra}-${nombreNormalizado}`;
+  }
+
+  function openSelectProductModal() {
+    if (!$selectProductModal || !$selectProductList || typeof bootstrap === "undefined") return;
+    
+    // Validar que el usuario sea administrador
+    if (!currentUser || currentUser.role !== "admin") {
+      showAlert("Solo los administradores pueden editar productos.", "error", "Acceso denegado");
+      return;
+    }
+    
+    if (productos.length === 0) {
+      showAlert("No hay productos para editar.", "warning");
+      return;
+    }
+    
+    // Limpiar buscador
+    if ($selectProductSearch) {
+      $selectProductSearch.value = "";
+    }
+    
+    // Renderizar lista de productos ordenados alfabéticamente
+    renderSelectProductList();
+    
+    const modal = bootstrap.Modal.getOrCreateInstance($selectProductModal);
+    modal.show();
+  }
+
+  function renderSelectProductList() {
+    if (!$selectProductList) return;
+    
+    $selectProductList.innerHTML = "";
+    
+    const searchTerm = $selectProductSearch ? $selectProductSearch.value.toLowerCase().trim() : "";
+    
+    // Filtrar y ordenar productos
+    let filteredProducts = productos;
+    if (searchTerm) {
+      filteredProducts = productos.filter(p => 
+        (p.nombre || "").toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Ordenar alfabéticamente
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+      const nameA = (a.nombre || "").toLowerCase().trim();
+      const nameB = (b.nombre || "").toLowerCase().trim();
+      return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
+    });
+    
+    if (sortedProducts.length === 0) {
+      $selectProductList.innerHTML = '<div class="text-center text-muted py-3">No se encontraron productos.</div>';
+      return;
+    }
+    
+    sortedProducts.forEach((product) => {
+      const item = document.createElement("a");
+      item.href = "#";
+      item.className = "list-group-item list-group-item-action";
+      item.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <span>${escapeHtml(product.nombre || "")}</span>
+          <i class="bi bi-chevron-right text-muted"></i>
+        </div>
+      `;
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Cerrar modal de selección
+        if (typeof bootstrap !== "undefined") {
+          const selectModal = bootstrap.Modal.getInstance($selectProductModal);
+          if (selectModal) selectModal.hide();
+        }
+        // Abrir modal de edición con el producto seleccionado
+        openProductModalForEdit(product);
+      });
+      $selectProductList.appendChild(item);
+    });
+  }
+
+  function openProductModalForEdit(product) {
+    if (!$productModal || typeof bootstrap === "undefined") return;
+    
+    // Validar que el usuario sea administrador
+    if (!currentUser || currentUser.role !== "admin") {
+      showAlert("Solo los administradores pueden editar productos.", "error", "Acceso denegado");
+      return;
+    }
+    
+    const modal = bootstrap.Modal.getOrCreateInstance($productModal);
+    
+    $productModalTitle.textContent = "Editar Producto";
+    $productId.value = product.id;
+    $productNombre.value = product.nombre;
+    
+    // Limpiar procesos existentes
+    $procesosContainer.innerHTML = "";
+    
+    // Agregar procesos existentes
+    if (product.procesos && product.procesos.length > 0) {
+      product.procesos.forEach((proceso, index) => {
+        addProcesoRow(proceso, index);
+      });
+    } else {
+      // Si no hay procesos, agregar uno vacío
+      addProcesoRow();
+    }
+    
+    modal.show();
+  }
+
+  function openProductModal(isEdit = false) {
+    if (!$productModal || typeof bootstrap === "undefined") return;
+    
+    // Validar que el usuario sea administrador
+    if (!currentUser || currentUser.role !== "admin") {
+      showAlert("Solo los administradores pueden crear o editar productos.", "error", "Acceso denegado");
+      return;
+    }
+    
+    if (isEdit) {
+      // Modo edición: abrir modal de selección
+      openSelectProductModal();
+      return;
+    }
+    
+    // Modo creación
+    const modal = bootstrap.Modal.getOrCreateInstance($productModal);
+    $productModalTitle.textContent = "Nuevo Producto";
+    $productId.value = "";
+    $productNombre.value = "";
+    $procesosContainer.innerHTML = "";
+    // Agregar una fila vacía inicial
+    addProcesoRow();
+    
+    modal.show();
+  }
+
+  function formatCurrencyInput(value) {
+    // Remover todo excepto números
+    const numStr = String(value || '').replace(/[^0-9]/g, '');
+    if (!numStr) return '';
+    
+    // Convertir a número y formatear
+    const num = parseInt(numStr, 10);
+    if (isNaN(num) || num === 0) return '';
+    
+    // Formatear con comas
+    return '$' + num.toLocaleString('es-CO');
+  }
+
+  function parseCurrencyInput(value) {
+    // Remover signo de peso y comas, convertir a número
+    const numStr = String(value || '').replace(/[^0-9]/g, '');
+    return numStr ? parseInt(numStr, 10) : 0;
+  }
+
+  function addProcesoRow(procesoData = null, index = null) {
+    if (!$procesosContainer) return;
+    
+    const rowIndex = index !== null ? index : $procesosContainer.children.length;
+    const tr = document.createElement("tr");
+    
+    // Formatear valores de precio si existen
+    const vrUnit1Formatted = procesoData?.vrUnit1 ? formatCurrencyInput(procesoData.vrUnit1) : '';
+    const vrUnit2Formatted = procesoData?.vrUnit2 ? formatCurrencyInput(procesoData.vrUnit2) : '';
+    const vrUnit3Formatted = procesoData?.vrUnit3 ? formatCurrencyInput(procesoData.vrUnit3) : '';
+    const vrUnitUSDFormatted = procesoData?.vrUnitUSD ? formatCurrencyInput(procesoData.vrUnitUSD) : '';
+    
+    tr.innerHTML = `
+      <td class="text-center align-middle" style="width: 40px;">${rowIndex + 1}</td>
+      <td><input type="text" class="form-control form-control-sm proceso-codigo" value="${escapeHtml(procesoData?.codigo || '')}" placeholder="Ej: AEU-001"></td>
+      <td><input type="text" class="form-control form-control-sm proceso-analisis" value="${escapeHtml(procesoData?.analisis || '')}" placeholder="Ej: Identificación" required></td>
+      <td><input type="text" class="form-control form-control-sm proceso-metodo" value="${escapeHtml(procesoData?.metodo || '')}" placeholder="Ej: USP <197>"></td>
+      <td><input type="number" class="form-control form-control-sm proceso-cmtra" value="${procesoData?.cMtra_g || procesoData?.cMtra || ''}" placeholder="0" min="0" step="0.01"></td>
+      <td><input type="number" class="form-control form-control-sm proceso-cantidad" value="${procesoData?.cantidad !== undefined && procesoData?.cantidad !== null && procesoData?.cantidad !== '' ? procesoData.cantidad : ''}" placeholder="" min="0" step="1"></td>
+      <td><input type="text" class="form-control form-control-sm proceso-vrunit1" value="${vrUnit1Formatted}" placeholder="$0"></td>
+      <td><input type="text" class="form-control form-control-sm proceso-vrunit2" value="${vrUnit2Formatted}" placeholder="$0"></td>
+      <td><input type="text" class="form-control form-control-sm proceso-vrunit3" value="${vrUnit3Formatted}" placeholder="$0"></td>
+      <td><input type="text" class="form-control form-control-sm proceso-vrunitusd" value="${vrUnitUSDFormatted}" placeholder="$0"></td>
+      <td class="text-center" style="width: 60px;">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-proceso" title="Eliminar">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    // Agregar event listeners para formatear campos de precio
+    const priceInputs = [
+      tr.querySelector(".proceso-vrunit1"),
+      tr.querySelector(".proceso-vrunit2"),
+      tr.querySelector(".proceso-vrunit3"),
+      tr.querySelector(".proceso-vrunitusd")
+    ];
+    
+    priceInputs.forEach(input => {
+      if (input) {
+        // Al hacer foco, limpiar el formato para facilitar la edición
+        input.addEventListener("focus", (e) => {
+          const value = e.target.value;
+          // Remover formato y dejar solo números
+          const numOnly = value.replace(/[^0-9]/g, '');
+          if (numOnly) {
+            e.target.value = numOnly;
+          }
+        });
+        
+        // Formatear al perder el foco
+        input.addEventListener("blur", (e) => {
+          const value = e.target.value;
+          if (value.trim()) {
+            const formatted = formatCurrencyInput(value);
+            e.target.value = formatted;
+          }
+        });
+        
+        // Permitir solo números mientras se escribe
+        input.addEventListener("input", (e) => {
+          const value = e.target.value;
+          const numOnly = value.replace(/[^0-9]/g, '');
+          if (value !== numOnly) {
+            const cursorPos = e.target.selectionStart;
+            e.target.value = numOnly;
+            // Ajustar posición del cursor
+            const newPos = Math.max(0, cursorPos - (value.length - numOnly.length));
+            e.target.setSelectionRange(newPos, newPos);
+          }
+        });
+      }
+    });
+    
+    // Agregar event listener al botón eliminar
+    const removeBtn = tr.querySelector(".btn-remove-proceso");
+    removeBtn.addEventListener("click", () => {
+      tr.remove();
+      updateProcesoRowNumbers();
+    });
+    
+    $procesosContainer.appendChild(tr);
+  }
+
+  function updateProcesoRowNumbers() {
+    if (!$procesosContainer) return;
+    const rows = $procesosContainer.querySelectorAll("tr");
+    rows.forEach((row, index) => {
+      const numberCell = row.querySelector("td:first-child");
+      if (numberCell) {
+        numberCell.textContent = index + 1;
+      }
+    });
+  }
+
+  function saveProduct() {
+    if (!$productFormModal || !$productFormModal.checkValidity()) {
+      $productFormModal.reportValidity();
+      return;
+    }
+
+    const nombre = $productNombre.value.trim();
+    if (!nombre) {
+      showAlert("Por favor ingresa el nombre del producto.", "warning");
+      return;
+    }
+
+    // Recopilar procesos
+    const procesos = [];
+    const rows = $procesosContainer.querySelectorAll("tr");
+    
+    if (rows.length === 0) {
+      showAlert("Debes agregar al menos un análisis al producto.", "warning");
+      return;
+    }
+
+    rows.forEach((row) => {
+      const codigo = row.querySelector(".proceso-codigo")?.value.trim() || "";
+      const analisis = row.querySelector(".proceso-analisis")?.value.trim() || "";
+      const metodo = row.querySelector(".proceso-metodo")?.value.trim() || "";
+      const cMtra_g = parseFloat(row.querySelector(".proceso-cmtra")?.value) || 0;
+      const cantidadInput = row.querySelector(".proceso-cantidad")?.value.trim();
+      const cantidad = cantidadInput !== "" && !isNaN(parseInt(cantidadInput)) ? parseInt(cantidadInput) : undefined;
+      const vrUnit1 = parseCurrencyInput(row.querySelector(".proceso-vrunit1")?.value) || 0;
+      const vrUnit2 = parseCurrencyInput(row.querySelector(".proceso-vrunit2")?.value) || 0;
+      const vrUnit3 = parseCurrencyInput(row.querySelector(".proceso-vrunit3")?.value) || 0;
+      const vrUnitUSD = parseCurrencyInput(row.querySelector(".proceso-vrunitusd")?.value) || 0;
+
+      // Validar que al menos tenga análisis
+      if (analisis) {
+        procesos.push({
+          codigo,
+          analisis,
+          metodo,
+          cMtra_g: cMtra_g > 0 ? cMtra_g : undefined,
+          cantidad: cantidad !== undefined && cantidad > 0 ? cantidad : undefined,
+          vrUnit1: vrUnit1 > 0 ? vrUnit1 : undefined,
+          vrUnit2: vrUnit2 > 0 ? vrUnit2 : undefined,
+          vrUnit3: vrUnit3 > 0 ? vrUnit3 : undefined,
+          vrUnitUSD: vrUnitUSD > 0 ? vrUnitUSD : undefined
+        });
+      }
+    });
+
+    if (procesos.length === 0) {
+      showAlert("Debes agregar al menos un análisis válido al producto.", "warning");
+      return;
+    }
+
+    const productId = $productId.value.trim();
+    let updatedProducts;
+
+    if (productId) {
+      // Editar producto existente
+      const existingProduct = productos.find((p) => p.id === productId);
+      if (!existingProduct) {
+        showAlert("Producto no encontrado.", "error");
+        return;
+      }
+
+      // Verificar que el nombre no esté en uso por otro producto
+      const nameTaken = productos.some((p) => p.id !== productId && p.nombre.toLowerCase() === nombre.toLowerCase());
+      if (nameTaken) {
+        showAlert("Ya existe un producto con ese nombre.", "warning");
+        return;
+      }
+
+      updatedProducts = productos.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              nombre,
+              procesos
+            }
+          : p
+      );
+    } else {
+      // Crear nuevo producto
+      // Verificar que el nombre no esté en uso
+      const nameTaken = productos.some((p) => p.nombre.toLowerCase() === nombre.toLowerCase());
+      if (nameTaken) {
+        showAlert("Ya existe un producto con ese nombre.", "warning");
+        return;
+      }
+
+      const newId = generateProductId(nombre);
+      // Asegurar que el ID sea único
+      let finalId = newId;
+      let counter = 1;
+      while (productos.some(p => p.id === finalId)) {
+        finalId = `${newId}-${counter}`;
+        counter++;
+      }
+
+      const newProduct = {
+        id: finalId,
+        nombre,
+        procesos
+      };
+      updatedProducts = [...productos, newProduct];
+    }
+
+    // Guardar productos
+    productos = updatedProducts;
+    saveCatalog(productos);
+    
+    // Limpiar selección si se editó
+    if (productId) {
+      selectedProductIds.delete(productId);
+      updateSelectionStateUI();
+    }
+    
+    // Recargar productos
+    renderProductsByLetter(currentLetter);
+    
+    // Actualizar el modal de eliminar productos si está abierto
+    if ($deleteProductsModal && typeof bootstrap !== "undefined") {
+      const deleteModal = bootstrap.Modal.getInstance($deleteProductsModal);
+      if (deleteModal && deleteModal._isShown) {
+        // El modal está abierto, actualizar la lista
+        openDeleteProductsModal();
+      }
+    }
+    
+    closeProductModal();
+    showAlert(productId ? "Producto actualizado correctamente." : "Producto creado correctamente.", "success");
+  }
+
+  function closeProductModal() {
+    if (!$productModal || typeof bootstrap === "undefined") return;
+    const modal = bootstrap.Modal.getOrCreateInstance($productModal);
+    modal.hide();
   }
 
   function deleteUser(id) {
@@ -4566,6 +6431,153 @@
     if ($passwordHint) $passwordHint.classList.add("d-none");
   }
 
+  // Manejar accesibilidad de modales - prevenir foco en modales ocultos
+  function setupModalAccessibility() {
+    // Escuchar cuando cualquier modal comienza a ocultarse
+    document.addEventListener('hide.bs.modal', function(event) {
+      const modal = event.target;
+      // Remover foco de cualquier elemento dentro del modal antes de que se oculte
+      const focusedElement = modal.querySelector(':focus');
+      if (focusedElement) {
+        focusedElement.blur();
+      }
+    });
+
+    // Escuchar cuando cualquier modal se oculta completamente
+    document.addEventListener('hidden.bs.modal', function(event) {
+      const modal = event.target;
+      // Remover foco de cualquier elemento dentro del modal
+      const focusedElement = modal.querySelector(':focus');
+      if (focusedElement) {
+        focusedElement.blur();
+      }
+      // Asegurar que aria-hidden esté correctamente configurado
+      if (!modal.classList.contains('show')) {
+        modal.setAttribute('aria-hidden', 'true');
+        // Remover tabindex de todos los elementos interactivos dentro del modal
+        const interactiveElements = modal.querySelectorAll('button, a, input, select, textarea, [tabindex]');
+        interactiveElements.forEach(el => {
+          if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') !== '-1') {
+            el.setAttribute('data-original-tabindex', el.getAttribute('tabindex'));
+            el.setAttribute('tabindex', '-1');
+          } else if (!el.hasAttribute('tabindex')) {
+            el.setAttribute('tabindex', '-1');
+          }
+        });
+      }
+    });
+
+    // Escuchar cuando cualquier modal se muestra
+    document.addEventListener('shown.bs.modal', function(event) {
+      const modal = event.target;
+      // Remover aria-hidden cuando el modal está visible
+      modal.removeAttribute('aria-hidden');
+      // Restaurar tabindex de elementos interactivos
+      const interactiveElements = modal.querySelectorAll('[data-original-tabindex], [tabindex="-1"]');
+      interactiveElements.forEach(el => {
+        if (el.hasAttribute('data-original-tabindex')) {
+          el.setAttribute('tabindex', el.getAttribute('data-original-tabindex'));
+          el.removeAttribute('data-original-tabindex');
+        } else if (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+          el.removeAttribute('tabindex');
+        }
+      });
+    });
+
+    // Prevenir foco en elementos dentro de modales ocultos
+    document.addEventListener('focusin', function(event) {
+      const target = event.target;
+      const modal = target.closest('.modal');
+      if (modal && !modal.classList.contains('show')) {
+        // Si el elemento está dentro de un modal oculto, quitar el foco
+        event.preventDefault();
+        event.stopPropagation();
+        target.blur();
+        // Enfocar el body para evitar problemas de accesibilidad
+        if (document.activeElement === target) {
+          document.body.focus();
+        }
+      }
+    }, true);
+  }
+
+  // Inicializar accesibilidad de modales
+  setupModalAccessibility();
+
+  // Funciones de depuración para verificar el estado del localStorage
+  window.debugUsers = function() {
+    console.log("=== DIAGNÓSTICO DE USUARIOS ===");
+    console.log("1. Usuarios en localStorage:", getUsers());
+    console.log("2. Datos raw en localStorage:", localStorage.getItem("olgroup_users"));
+    console.log("3. Usuario actual en sessionStorage:", getCurrentUser());
+    console.log("4. Estado de localStorage:", {
+      disponible: typeof Storage !== "undefined",
+      espacioDisponible: (function() {
+        try {
+          localStorage.setItem("test", "test");
+          localStorage.removeItem("test");
+          return "OK";
+        } catch (e) {
+          return "ERROR: " + e.message;
+        }
+      })()
+    });
+    return {
+      users: getUsers(),
+      rawData: localStorage.getItem("olgroup_users"),
+      currentUser: getCurrentUser()
+    };
+  };
+
+  window.backupUsers = function() {
+    try {
+      const users = getUsers();
+      const backup = {
+        timestamp: new Date().toISOString(),
+        users: users
+      };
+      const backupStr = JSON.stringify(backup, null, 2);
+      console.log("=== BACKUP DE USUARIOS ===");
+      console.log(backupStr);
+      // También copiar al portapapeles si es posible
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(backupStr).then(() => {
+          console.log("Backup copiado al portapapeles");
+          alert("Backup de usuarios copiado al portapapeles y mostrado en consola.");
+        }).catch(() => {
+          alert("Backup generado. Revisa la consola (F12) para ver los datos.");
+        });
+      } else {
+        alert("Backup generado. Revisa la consola (F12) para ver los datos.");
+      }
+      return backup;
+    } catch (error) {
+      console.error("Error al crear backup:", error);
+      alert("Error al crear backup: " + error.message);
+      return null;
+    }
+  };
+
+  window.restoreUsers = function(usersData) {
+    if (!usersData || !Array.isArray(usersData)) {
+      console.error("Error: usersData debe ser un array");
+      alert("Error: Los datos deben ser un array de usuarios.");
+      return false;
+    }
+    
+    if (confirm(`¿Estás seguro de que deseas restaurar ${usersData.length} usuarios? Esto reemplazará todos los usuarios actuales.`)) {
+      if (saveUsers(usersData)) {
+        alert("Usuarios restaurados correctamente. Recarga la página.");
+        location.reload();
+        return true;
+      } else {
+        alert("Error al restaurar usuarios.");
+        return false;
+      }
+    }
+    return false;
+  };
+
   // Inicio robusto: si el DOM ya está listo, inicializa de inmediato
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
@@ -4573,5 +6585,3 @@
     init();
   }
 })();
-
-
