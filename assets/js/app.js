@@ -258,12 +258,15 @@
   const $userName = document.getElementById("userName");
   const $userCargo = document.getElementById("userCargo");
   const $userPassword = document.getElementById("userPassword");
+  const $userPasswordConfirm = document.getElementById("userPasswordConfirm");
   const $userRole = document.getElementById("userRole");
   const $userActive = document.getElementById("userActive");
   const $btnSaveUser = document.getElementById("btnSaveUser");
   const $userFormModal = document.getElementById("userFormModal");
   const $passwordRequired = document.getElementById("passwordRequired");
   const $passwordHint = document.getElementById("passwordHint");
+  const $passwordConfirmRequired = document.getElementById("passwordConfirmRequired");
+  const $passwordConfirmHint = document.getElementById("passwordConfirmHint");
   
   let logoAsset = null; // { el?: HTMLImageElement, dataUrl?: string }
   let topProductsChart = null;
@@ -290,6 +293,8 @@
       // Verificar si ya existen usuarios (no solo contar, verificar que sean válidos)
       const hasValidUsers = Array.isArray(users) && users.length > 0 && users.some(u => u.id && u.email);
       
+      // Solo crear usuarios por defecto si NO hay ningún usuario en el sistema (primera vez)
+      // Si ya hay usuarios, no recrear usuarios por defecto aunque hayan sido eliminados
       if (!hasValidUsers) {
         // Solo crear usuarios por defecto si realmente no hay usuarios válidos
         const defaultUsers = [
@@ -315,64 +320,12 @@
           }
         ];
         
-        // Verificar si los usuarios por defecto ya existen antes de agregarlos
-        const existingDefaultUsers = users.filter(u => 
-          u.id === "USER-ADMIN-001" || u.id === "USER-VENDEDOR-001" ||
-          u.email === "admin@olgroup.com" || u.email === "vendedor@olgroup.com"
-        );
-        
-        if (existingDefaultUsers.length === 0) {
-          // No hay usuarios por defecto, agregarlos
-          saveUsers(defaultUsers);
-          console.log("Usuarios por defecto creados");
-        } else if (users.length === 0) {
-          // Hay referencia a usuarios por defecto pero el array está vacío (datos corruptos)
-          // Restaurar solo los usuarios por defecto
-          saveUsers(defaultUsers);
-          console.log("Usuarios por defecto restaurados después de corrupción de datos");
-        } else {
-          // Ya hay usuarios, no hacer nada para preservar los datos existentes
-          console.log("Usuarios existentes preservados. Total:", users.length);
-        }
+        saveUsers(defaultUsers);
+        console.log("Usuarios por defecto creados (primera inicialización)");
       } else {
-        // Hay usuarios válidos, verificar y agregar usuarios por defecto solo si no existen
-        const hasAdmin = users.some(u => u.id === "USER-ADMIN-001" || u.email === "admin@olgroup.com");
-        const hasVendedor = users.some(u => u.id === "USER-VENDEDOR-001" || u.email === "vendedor@olgroup.com");
-        
-        if (!hasAdmin || !hasVendedor) {
-          // Agregar usuarios por defecto que falten sin borrar los existentes
-          const usersToAdd = [];
-          if (!hasAdmin) {
-            usersToAdd.push({
-              id: "USER-ADMIN-001",
-              username: "admin",
-              email: "admin@olgroup.com",
-              password: hashPassword("admin"),
-              name: "Administrador",
-              role: "admin",
-              active: true,
-              createdAt: new Date().toISOString()
-            });
-          }
-          if (!hasVendedor) {
-            usersToAdd.push({
-              id: "USER-VENDEDOR-001",
-              username: "vendedor",
-              email: "vendedor@olgroup.com",
-              password: hashPassword("vendedor"),
-              name: "Vendedor",
-              role: "vendedor",
-              active: true,
-              createdAt: new Date().toISOString()
-            });
-          }
-          
-          if (usersToAdd.length > 0) {
-            const updatedUsers = [...users, ...usersToAdd];
-            saveUsers(updatedUsers);
-            console.log("Usuarios por defecto agregados sin borrar usuarios existentes");
-          }
-        }
+        // Ya hay usuarios en el sistema, no recrear usuarios por defecto
+        // Esto respeta las eliminaciones intencionales de usuarios
+        console.log("Usuarios existentes preservados. Total:", users.length);
       }
     } catch (error) {
       console.error("Error al inicializar usuarios por defecto:", error);
@@ -1262,8 +1215,12 @@
         userModalEl.addEventListener("hidden.bs.modal", () => {
           if ($userFormModal) $userFormModal.reset();
           if ($userId) $userId.value = "";
+          if ($userPasswordConfirm) $userPasswordConfirm.value = "";
           if ($passwordRequired) $passwordRequired.classList.remove("d-none");
-          if ($passwordHint) $passwordHint.classList.add("d-none");
+          if ($passwordHint) $passwordHint.classList.remove("d-none");
+          if ($passwordHint) $passwordHint.textContent = "Mínimo 8 caracteres. Dejar en blanco para mantener la actual (solo al editar)";
+          if ($passwordConfirmRequired) $passwordConfirmRequired.classList.remove("d-none");
+          if ($passwordConfirmHint) $passwordConfirmHint.textContent = "Repite la contraseña para verificar";
         });
       }
     }
@@ -1315,13 +1272,17 @@
 
     // Event listeners para productos - crear/editar
     if ($btnAddProduct) {
-      $btnAddProduct.addEventListener("click", () => {
+      $btnAddProduct.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!currentUser || currentUser.role !== "admin") {
           showAlert("Solo los administradores pueden crear productos.", "error", "Acceso denegado");
           return;
         }
         openProductModal();
       });
+    } else {
+      console.warn("Botón btnAddProduct no encontrado");
     }
     if ($btnEditProduct) {
       $btnEditProduct.addEventListener("click", () => {
@@ -4124,8 +4085,40 @@
       acceptBtn.className = `btn ${config.btnClass}`;
     }
 
+    // Establecer z-index antes de mostrar el modal para que aparezca encima de otros modales
+    modalEl.style.zIndex = '1065';
+    
     // Mostrar modal
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+      backdrop: true,
+      keyboard: true
+    });
+    
+    // Ajustar backdrop cuando el modal se muestra
+    const onShown = () => {
+      // Ajustar backdrop solo si hay múltiples modales abiertos
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      if (backdrops.length > 1) {
+        // El último backdrop (del modal de alerta) debe tener z-index mayor
+        const lastBackdrop = backdrops[backdrops.length - 1];
+        lastBackdrop.style.zIndex = '1060';
+        // Asegurar que el backdrop anterior no bloquee la interacción
+        if (backdrops.length > 1) {
+          backdrops[backdrops.length - 2].style.zIndex = '1050';
+        }
+      }
+      
+      modalEl.removeEventListener('shown.bs.modal', onShown);
+    };
+    
+    const onHidden = () => {
+      // Restaurar z-index por defecto
+      modalEl.style.zIndex = '';
+      modalEl.removeEventListener('hidden.bs.modal', onHidden);
+    };
+    
+    modalEl.addEventListener("shown.bs.modal", onShown, { once: true });
+    modalEl.addEventListener("hidden.bs.modal", onHidden, { once: true });
     modal.show();
   }
 
@@ -5556,10 +5549,16 @@
 
     $usersTableBody.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => {
+        // No ejecutar si el botón está deshabilitado
+        if (btn.disabled) return;
+        
         const action = btn.dataset.action;
         const id = btn.dataset.id;
         const user = users.find((u) => u.id === id);
-        if (action === "edit" && user) {
+        
+        if (!user) return;
+        
+        if (action === "edit") {
           openUserModal(user);
         } else if (action === "delete" && user.id !== currentUser.id) {
           deleteUser(id);
@@ -5579,6 +5578,7 @@
       $userName.value = user.name || "";
       $userCargo.value = user.cargo || "";
       $userPassword.value = "";
+      if ($userPasswordConfirm) $userPasswordConfirm.value = "";
       $userRole.value = user.role || "";
       $userActive.checked = user.active !== false;
       
@@ -5586,6 +5586,9 @@
       if ($passwordRequired) $passwordRequired.classList.add("d-none");
       if ($passwordHint) $passwordHint.classList.remove("d-none");
       if ($userPassword) $userPassword.removeAttribute("required");
+      if ($passwordConfirmRequired) $passwordConfirmRequired.classList.add("d-none");
+      if ($passwordConfirmHint) $passwordConfirmHint.textContent = "Dejar en blanco para mantener la actual";
+      if ($userPasswordConfirm) $userPasswordConfirm.removeAttribute("required");
     } else {
       $userModalTitle.textContent = "Nuevo Usuario";
       $userId.value = "";
@@ -5594,13 +5597,18 @@
       $userName.value = "";
       $userCargo.value = "";
       $userPassword.value = "";
+      if ($userPasswordConfirm) $userPasswordConfirm.value = "";
       $userRole.value = "";
       $userActive.checked = true;
       
       // Mostrar requerimiento de contraseña al crear
       if ($passwordRequired) $passwordRequired.classList.remove("d-none");
-      if ($passwordHint) $passwordHint.classList.add("d-none");
+      if ($passwordHint) $passwordHint.classList.remove("d-none");
+      if ($passwordHint) $passwordHint.textContent = "Mínimo 8 caracteres";
       if ($userPassword) $userPassword.setAttribute("required", "required");
+      if ($passwordConfirmRequired) $passwordConfirmRequired.classList.remove("d-none");
+      if ($passwordConfirmHint) $passwordConfirmHint.textContent = "Repite la contraseña para verificar";
+      if ($userPasswordConfirm) $userPasswordConfirm.setAttribute("required", "required");
     }
 
     const modalEl = document.getElementById("userModal");
@@ -5633,6 +5641,7 @@
     const name = $userName.value.trim();
     const cargo = $userCargo.value.trim();
     const password = $userPassword.value.trim();
+    const passwordConfirm = $userPasswordConfirm ? $userPasswordConfirm.value.trim() : "";
     const role = $userRole.value;
     const active = $userActive.checked;
     const id = $userId.value.trim();
@@ -5647,6 +5656,39 @@
     if (!emailRegex.test(email)) {
       showAlert("Por favor ingresa un email válido.", "warning");
       return;
+    }
+
+    // Validar contraseña
+    if (id) {
+      // Editar usuario: si se llena la contraseña, debe tener mínimo 8 caracteres y coincidir con la confirmación
+      if (password) {
+        if (password.length < 8) {
+          showAlert("La contraseña debe tener mínimo 8 caracteres.", "warning");
+          return;
+        }
+        if (password !== passwordConfirm) {
+          showAlert("Las contraseñas no coinciden.", "warning");
+          return;
+        }
+      } else if (passwordConfirm) {
+        // Si se llena la confirmación pero no la contraseña
+        showAlert("Debes ingresar la contraseña si deseas cambiarla.", "warning");
+        return;
+      }
+    } else {
+      // Crear usuario: la contraseña es obligatoria
+      if (!password) {
+        showAlert("La contraseña es requerida para nuevos usuarios.", "warning");
+        return;
+      }
+      if (password.length < 8) {
+        showAlert("La contraseña debe tener mínimo 8 caracteres.", "warning");
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showAlert("Las contraseñas no coinciden.", "warning");
+        return;
+      }
     }
 
     const users = getUsers();
@@ -5695,10 +5737,7 @@
       );
     } else {
       // Crear nuevo usuario
-      if (!password) {
-        showAlert("La contraseña es requerida para nuevos usuarios.", "warning");
-        return;
-      }
+      // La validación de contraseña ya se hizo arriba
 
       // Verificar que el username no esté en uso
       const usernameTaken = users.some((u) => u.username.toLowerCase() === username.toLowerCase());
@@ -5866,7 +5905,14 @@
   }
 
   function openProductModal(isEdit = false) {
-    if (!$productModal || typeof bootstrap === "undefined") return;
+    if (!$productModal) {
+      console.error("Modal de producto no encontrado");
+      return;
+    }
+    if (typeof bootstrap === "undefined") {
+      console.error("Bootstrap no está definido");
+      return;
+    }
     
     // Validar que el usuario sea administrador
     if (!currentUser || currentUser.role !== "admin") {
@@ -5881,15 +5927,20 @@
     }
     
     // Modo creación
-    const modal = bootstrap.Modal.getOrCreateInstance($productModal);
-    $productModalTitle.textContent = "Nuevo Producto";
-    $productId.value = "";
-    $productNombre.value = "";
-    $procesosContainer.innerHTML = "";
-    // Agregar una fila vacía inicial
-    addProcesoRow();
-    
-    modal.show();
+    try {
+      const modal = bootstrap.Modal.getOrCreateInstance($productModal);
+      if ($productModalTitle) $productModalTitle.textContent = "Nuevo Producto";
+      if ($productId) $productId.value = "";
+      if ($productNombre) $productNombre.value = "";
+      if ($procesosContainer) $procesosContainer.innerHTML = "";
+      // Agregar una fila vacía inicial
+      addProcesoRow();
+      
+      modal.show();
+    } catch (error) {
+      console.error("Error al abrir el modal de producto:", error);
+      showAlert("Error al abrir el formulario de producto. Por favor, recarga la página.", "error", "Error");
+    }
   }
 
   function formatCurrencyInput(value) {
@@ -6168,8 +6219,12 @@
     }
     if ($userFormModal) $userFormModal.reset();
     if ($userId) $userId.value = "";
+    if ($userPasswordConfirm) $userPasswordConfirm.value = "";
     if ($passwordRequired) $passwordRequired.classList.remove("d-none");
     if ($passwordHint) $passwordHint.classList.add("d-none");
+    if ($passwordHint) $passwordHint.textContent = "Mínimo 8 caracteres. Dejar en blanco para mantener la actual (solo al editar)";
+    if ($passwordConfirmRequired) $passwordConfirmRequired.classList.remove("d-none");
+    if ($passwordConfirmHint) $passwordConfirmHint.textContent = "Repite la contraseña para verificar";
   }
 
   // Manejar accesibilidad de modales - prevenir foco en modales ocultos

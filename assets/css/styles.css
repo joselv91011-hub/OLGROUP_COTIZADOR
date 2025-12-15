@@ -1,7 +1,10 @@
 :root {
-  --brand-primary: #44c2c4; /* teal */
-  --brand-secondary: #f3c02c; /* amarillo */
-  --brand-light: #e8f7f7; /* teal muy claro para fondos */
+  --brand-primary: #44c2c4;
+  /* teal */
+  --brand-secondary: #f3c02c;
+  /* amarillo */
+  --brand-light: #e8f7f7;
+  /* teal muy claro para fondos */
   /* Unificar azules con Bootstrap */
   --bs-primary: var(--brand-primary);
   --bs-primary-rgb: 68, 194, 196;
@@ -143,16 +146,18 @@
 
 .alphabet-scroll {
   overflow-x: auto;
+  overflow-y: hidden !important;
   white-space: nowrap;
   scrollbar-width: thin;
+  max-height: fit-content;
 }
 
 /* Tabs y contenedores navegables en móvil - solo horizontal */
-.nav-tabs { 
-  overflow-x: auto !important; 
-  overflow-y: hidden !important; 
-  white-space: nowrap; 
-  flex-wrap: nowrap; 
+.nav-tabs {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 /* Colores de marca */
@@ -186,7 +191,8 @@
 }
 
 /* Estado deshabilitado: mismo color que activo */
-.btn-primary:disabled, .btn-primary.disabled {
+.btn-primary:disabled,
+.btn-primary.disabled {
   background-color: var(--brand-primary) !important;
   border-color: var(--brand-primary) !important;
 }
@@ -198,14 +204,16 @@
 }
 
 /* Formularios: focus del mismo color de marca */
-.form-control, .form-select {
+.form-control,
+.form-select {
   border-radius: 8px;
   border: 1.5px solid #dee2e6;
   transition: all var(--transition-fast);
   padding: 0.625rem 0.875rem;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: var(--brand-primary);
   box-shadow: 0 0 0 0.25rem rgba(68, 194, 196, 0.25);
   transform: translateY(-1px);
@@ -222,6 +230,7 @@
   background-color: var(--brand-primary);
   border-color: var(--brand-primary);
 }
+
 .form-check-input:focus {
   border-color: var(--brand-primary);
   box-shadow: 0 0 0 .25rem rgba(68, 194, 196, .25);
@@ -233,6 +242,7 @@
   border-color: var(--brand-primary);
   box-shadow: 0 0 0 .25rem rgba(68, 194, 196, .25);
 }
+
 .btn-outline-primary {
   color: var(--brand-primary);
   border-color: var(--brand-primary);
@@ -325,7 +335,9 @@
   transform: translateY(0);
 }
 
-.bg-accent { background-color: var(--brand-secondary) !important; }
+.bg-accent {
+  background-color: var(--brand-secondary) !important;
+}
 
 .nav-tabs {
   border-bottom: 2px solid #e9ecef;
@@ -371,7 +383,10 @@
   transform: scale(1.05);
 }
 
-.product-card .table thead th { background-color: var(--brand-primary); color: #fff; }
+.product-card .table thead th {
+  background-color: var(--brand-primary);
+  color: #fff;
+}
 
 .product-card .table thead th {
   white-space: nowrap;
@@ -403,12 +418,19 @@
 }
 
 /* Textos cortos solo en móvil para botones del historial */
-#historyFilters .label-short { display: none; }
-#historyFilters .label-full { display: inline; }
+#historyFilters .label-short {
+  display: none;
+}
+
+#historyFilters .label-full {
+  display: inline;
+}
 
 @media (max-width: 576px) {
-  .brand-logo { height: 32px; }
-  
+  .brand-logo {
+    height: 32px;
+  }
+
   /* Navbar responsive mejorado - Solo para navbars antiguos, no top-navbar */
   .navbar:not(.top-navbar) {
     padding-top: 0.75rem;
@@ -416,7 +438,7 @@
     min-height: auto;
     box-shadow: var(--shadow-sm);
   }
-  
+
   .navbar .container-fluid {
     flex-direction: column;
     gap: 0.5rem;
@@ -426,7 +448,7 @@
     padding-right: 1rem;
     display: flex;
   }
-  
+
   /* Primera fila: botones a la derecha (encima del título) */
   .navbar .d-flex.ms-auto {
     order: 1;
@@ -441,7 +463,7 @@
     z-index: 1;
     margin-bottom: 1.25rem !important;
   }
-  
+
   /* Segunda fila: logo y título centrados (debajo de los botones) */
   .navbar .navbar-brand.centered-brand {
     order: 2;
@@ -461,7 +483,7 @@
     padding-top: 0;
     z-index: 0;
   }
-  
+
   .navbar .navbar-brand span {
     font-size: 0.85rem;
     text-align: center;
@@ -471,7 +493,7 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
-  
+
   /* Tercera fila: info de usuario */
   .navbar #userInfo {
     order: 3;
@@ -485,7 +507,7 @@
     border-radius: 0.375rem;
     display: block;
   }
-  
+
   .navbar button {
     flex: 0 0 auto;
     min-width: 44px !important;
@@ -506,35 +528,38 @@
     -moz-user-select: none;
     user-select: none;
   }
-  
+
   .navbar button i {
     font-size: 1.1rem;
     pointer-events: none;
     flex-shrink: 0;
   }
-  
+
   .navbar button span:not(.badge) {
     display: none !important;
   }
-  
-  .scroll-top { width: 40px; height: 40px; }
-  
+
+  .scroll-top {
+    width: 40px;
+    height: 40px;
+  }
+
   /* Organizar botones de productos y procesos en móvil */
   /* El contenedor principal de búsqueda y botones */
-  #viewProducts .card-header > .d-flex.flex-wrap {
+  #viewProducts .card-header>.d-flex.flex-wrap {
     flex-direction: column;
     gap: 1rem !important;
     align-items: stretch !important;
   }
-  
+
   /* Campo de búsqueda - ancho completo y arriba */
-  #productSearch { 
-    max-width: 100% !important; 
+  #productSearch {
+    max-width: 100% !important;
     width: 100% !important;
     margin-bottom: 0.5rem;
     order: 1;
   }
-  
+
   /* Contenedor de botones - organizar en grid 2x2 */
   #productButtonsContainer {
     display: grid !important;
@@ -545,14 +570,14 @@
     align-items: stretch;
     order: 2;
   }
-  
+
   /* Asegurar que el input oculto no afecte el grid */
   #productButtonsContainer input[type="file"] {
     display: none !important;
     grid-column: none !important;
     grid-row: none !important;
   }
-  
+
   /* Botones en móvil - ancho completo de su celda */
   #productButtonsContainer .btn {
     width: 100%;
@@ -572,46 +597,46 @@
     box-sizing: border-box;
     margin: 0;
   }
-  
+
   /* Iconos en botones */
   #productButtonsContainer .btn i {
     flex-shrink: 0;
     font-size: 1.1rem;
   }
-  
+
   /* Grid 2x2: Crear | Editar en primera fila, Importar | Eliminar en segunda fila */
   /* Usar IDs específicos para evitar problemas con el input oculto */
-  
+
   /* Crear Producto - primera fila, primera columna */
   #btnAddProduct {
     grid-column: 1;
     grid-row: 1;
   }
-  
+
   /* Editar Producto - primera fila, segunda columna */
   #btnEditProduct {
     grid-column: 2;
     grid-row: 1;
   }
-  
+
   /* Importar Excel - segunda fila, primera columna */
   #btnLoadExcel {
     grid-column: 1;
     grid-row: 2;
   }
-  
+
   /* Eliminar Productos - segunda fila, segunda columna */
   #btnDeleteProducts {
     grid-column: 2;
     grid-row: 2;
   }
-  
+
   /* Si el botón Eliminar no está visible (admin-only), Importar ocupa toda la fila */
   #btnLoadExcel:only-of-type,
   #productButtonsContainer .btn:last-child#btnLoadExcel {
     grid-column: 1 / -1;
   }
-  
+
   /* Para usuarios vendedor: centrar el botón Importar Excel cuando es el único visible */
   body:not(.admin) #productButtonsContainer {
     display: flex !important;
@@ -620,7 +645,7 @@
     grid-template-columns: unset !important;
     grid-template-rows: unset !important;
   }
-  
+
   body:not(.admin) #productButtonsContainer #btnLoadExcel {
     grid-column: unset !important;
     grid-row: unset !important;
@@ -628,7 +653,7 @@
     width: auto;
     min-width: 200px;
   }
-  
+
   /* Tablas de productos - scroll horizontal para ver todas las columnas */
   .product-card .table-responsive {
     overflow-x: auto !important;
@@ -636,21 +661,21 @@
     width: 100%;
     display: block;
   }
-  
-  .product-card .table { 
-    min-width: 1000px; 
+
+  .product-card .table {
+    min-width: 1000px;
     width: 100%;
     margin: 0;
   }
-  
-  .product-card .table th, 
-  .product-card .table td { 
-    padding: .5rem .4rem; 
-    font-size: .8125rem; 
+
+  .product-card .table th,
+  .product-card .table td {
+    padding: .5rem .4rem;
+    font-size: .8125rem;
     white-space: nowrap;
     vertical-align: middle;
   }
-  
+
   /* Columna de Análisis - permitir texto largo con ajuste */
   .product-card .table th:nth-child(3),
   .product-card .table td:nth-child(3) {
@@ -660,14 +685,14 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
-  
+
   /* Columna de Código - ancho fijo */
   .product-card .table th:nth-child(2),
   .product-card .table td:nth-child(2) {
     min-width: 80px;
     max-width: 120px;
   }
-  
+
   /* Columna de Método - ancho moderado */
   .product-card .table th:nth-child(4),
   .product-card .table td:nth-child(4) {
@@ -676,7 +701,7 @@
     white-space: normal;
     word-wrap: break-word;
   }
-  
+
   /* Columnas numéricas - ancho fijo */
   .product-card .table th:nth-child(5),
   .product-card .table td:nth-child(5),
@@ -685,7 +710,7 @@
     min-width: 80px;
     text-align: center;
   }
-  
+
   /* Columnas de valores unitarios - ancho fijo */
   .product-card .table th:nth-child(7),
   .product-card .table td:nth-child(7),
@@ -700,25 +725,38 @@
     min-width: 120px;
     text-align: center;
   }
-  
+
   /* Mostrar todas las columnas - no ocultar ninguna */
   /* Ocultar solo el pie para evitar desalineaciones en móvil */
-  .product-card .table tfoot { display: none; }
+  .product-card .table tfoot {
+    display: none;
+  }
 
   /* Tabs: scroll horizontal en móvil - solo horizontal, sin vertical */
-  .nav-tabs { 
-    overflow-x: auto !important; 
-    overflow-y: hidden !important; 
-    flex-wrap: nowrap; 
-    justify-content: flex-start; 
+  .nav-tabs {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     -webkit-overflow-scrolling: touch;
     max-height: 100%;
   }
-  .nav-tabs .nav-item { flex: 0 0 auto; min-width: 0; }
-  .nav-tabs .nav-link { width: auto; padding: .45rem .6rem; white-space: nowrap; font-size: .9rem; text-align: center; }
+
+  .nav-tabs .nav-item {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .nav-tabs .nav-link {
+    width: auto;
+    padding: .45rem .6rem;
+    white-space: nowrap;
+    font-size: .9rem;
+    text-align: center;
+  }
 
   /* Alfabeto A-Z compacto */
-  .alphabet-btn { 
+  .alphabet-btn {
     min-width: 2rem !important;
     width: 2rem !important;
     height: 2rem !important;
@@ -732,37 +770,81 @@
     line-height: 1 !important;
     font-weight: 500 !important;
   }
-  #alphabetNav { gap: .25rem !important; justify-content: flex-start !important; }
+
+  #alphabetNav {
+    gap: .25rem !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: fit-content !important;
+  }
+
   /* Asegurar que el botón "Todos" no se corte - aumentar ancho */
-  #alphabetNav > button:first-child { 
+  #alphabetNav>button:first-child {
     min-width: 3.5rem !important;
     width: auto !important;
     padding: .25rem .75rem !important;
   }
 
+  /* Asegurar que alphabet-scroll no tenga scroll vertical */
+  .alphabet-scroll {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: fit-content !important;
+  }
+
   /* Historial: agrupar filtros 2 por fila */
-  #historyFilters { row-gap: .5rem; }
-  #historyFilters .label-full { display: none; }
-  #historyFilters .label-short { display: inline; }
-  #historyFilters > .col-auto { flex: 0 0 100%; min-width: 0; }
-  #historyFilters > .col-auto:nth-child(1),
-  #historyFilters > .col-auto:nth-child(2),
-  #historyFilters > .col-auto:nth-child(3),
-  #historyFilters > .col-auto:nth-child(4) { flex: 0 0 calc(50% - .25rem); min-width: 0; }
-  #historyFilters > .col-auto:nth-child(5),
-  #historyFilters > .col-auto:nth-child(6) { flex: 0 0 calc(50% - .25rem); min-width: 0; }
-  #historyFilters input, #historyFilters select { width: 100%; }
-  #historyFilters > .col-auto:nth-child(7) { flex: 0 0 100%; display: flex; justify-content: center; }
-  
+  #historyFilters {
+    row-gap: .5rem;
+  }
+
+  #historyFilters .label-full {
+    display: none;
+  }
+
+  #historyFilters .label-short {
+    display: inline;
+  }
+
+  #historyFilters>.col-auto {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  #historyFilters>.col-auto:nth-child(1),
+  #historyFilters>.col-auto:nth-child(2),
+  #historyFilters>.col-auto:nth-child(3),
+  #historyFilters>.col-auto:nth-child(4) {
+    flex: 0 0 calc(50% - .25rem);
+    min-width: 0;
+  }
+
+  #historyFilters>.col-auto:nth-child(5),
+  #historyFilters>.col-auto:nth-child(6) {
+    flex: 0 0 calc(50% - .25rem);
+    min-width: 0;
+  }
+
+  #historyFilters input,
+  #historyFilters select {
+    width: 100%;
+  }
+
+  #historyFilters>.col-auto:nth-child(7) {
+    flex: 0 0 100%;
+    display: flex;
+    justify-content: center;
+  }
+
   /* Campos de fecha en móvil: mostrar labels y asegurar visibilidad */
   #historyFilters input[type="date"] {
     min-height: 38px;
     color-scheme: light;
   }
-  
+
   /* Mostrar labels visibles para campos de fecha en móvil */
-  #historyFilters > .col-auto:nth-child(5) label,
-  #historyFilters > .col-auto:nth-child(6) label {
+  #historyFilters>.col-auto:nth-child(5) label,
+  #historyFilters>.col-auto:nth-child(6) label {
     display: block !important;
     visibility: visible !important;
     position: static !important;
@@ -778,13 +860,13 @@
     font-weight: 500;
     color: #495057;
   }
-  
+
   /* Modales en móvil vertical: asegurar que el botón de cerrar funcione */
   .modal {
     z-index: 1055 !important;
     padding: 0 !important;
   }
-  
+
   .modal-dialog,
   .modal-dialog-centered {
     max-height: 100vh !important;
@@ -799,12 +881,12 @@
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .modal-dialog-centered {
     justify-content: center !important;
     align-items: center !important;
   }
-  
+
   .modal-content {
     max-height: 85vh !important;
     max-width: 95% !important;
@@ -816,7 +898,7 @@
     border-radius: 0.75rem !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
   }
-  
+
   .modal-header {
     flex-shrink: 0 !important;
     position: relative !important;
@@ -829,7 +911,7 @@
     border-bottom: 1px solid #dee2e6 !important;
     order: 1 !important;
   }
-  
+
   /* Botón de cerrar siempre accesible y clickeable - PRIORIDAD MÁXIMA */
   .modal-header .btn-close,
   button.btn-close[data-bs-dismiss="modal"] {
@@ -854,7 +936,7 @@
     visibility: visible !important;
     order: 999 !important;
   }
-  
+
   .modal-header .btn-close::before {
     content: '' !important;
     position: absolute !important;
@@ -864,7 +946,7 @@
     bottom: 0 !important;
     z-index: -1 !important;
   }
-  
+
   .modal-body {
     overflow-y: auto !important;
     flex: 1 1 auto !important;
@@ -874,7 +956,7 @@
     position: relative !important;
     z-index: 1 !important;
   }
-  
+
   .modal-footer {
     flex-shrink: 0 !important;
     background-color: #fff !important;
@@ -884,37 +966,37 @@
     position: relative !important;
     z-index: 1 !important;
   }
-  
+
   /* Modales grandes en móvil - tamaño más compacto */
   .modal-lg .modal-content {
     max-width: 95% !important;
     width: 100% !important;
   }
-  
+
   /* Modales extra grandes en móvil - tamaño más compacto */
   .modal-xl .modal-content {
     max-width: 95% !important;
     width: 100% !important;
   }
-  
+
   /* Modales normales en móvil - tamaño más compacto */
   .modal-dialog:not(.modal-lg):not(.modal-xl) .modal-content {
     max-width: 90% !important;
     width: 100% !important;
   }
-  
+
   /* Asegurar que el backdrop no bloquee */
   .modal-backdrop {
     z-index: 1040 !important;
     pointer-events: auto !important;
   }
-  
+
   /* Asegurar que ningún elemento del modal-body bloquee el header */
   .modal-body * {
     position: relative;
     z-index: 1;
   }
-  
+
   /* El título del modal no debe bloquear el botón */
   .modal-title {
     flex: 1 1 auto;
@@ -946,7 +1028,7 @@
     flex-direction: row;
     gap: 0;
   }
-  
+
   .navbar #userInfo {
     order: 0;
     display: inline;
@@ -957,14 +1039,14 @@
     width: auto;
     align-self: center;
   }
-  
+
   .navbar .d-flex.ms-auto {
     order: 1;
     width: auto;
     align-self: center;
     margin-left: auto;
   }
-  
+
   .navbar .navbar-brand.centered-brand {
     position: absolute;
     left: 50%;
@@ -980,12 +1062,12 @@
   .navbar .navbar-brand span {
     font-size: 0.95rem;
   }
-  
+
   .navbar button {
     font-size: 0.875rem;
     padding: 0.5rem 0.8rem;
   }
-  
+
   .navbar #userInfo {
     font-size: 0.85rem;
   }
@@ -1124,9 +1206,14 @@ body.admin .btn.admin-only {
 }
 
 /* Asegurar que los botones admin-only se muestren correctamente */
-body.admin #btnDeleteProducts.admin-only {
+body.admin #btnDeleteProducts.admin-only,
+body.admin #btnAddProduct.admin-only,
+body.admin #btnEditProduct.admin-only {
   display: inline-block !important;
   visibility: visible !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 /* Asegurar que las secciones admin-only SIEMPRE estén ocultas para no-admin */
@@ -1181,7 +1268,9 @@ body.admin section#viewUsers:not(.d-none) {
 }
 
 /* Ancho mínimo para tablas de productos y scroll horizontal limpio en móviles */
-.product-card .table { min-width: 900px; }
+.product-card .table {
+  min-width: 900px;
+}
 
 /* Botón scroll-to-top */
 .scroll-top {
@@ -1215,6 +1304,7 @@ body.admin section#viewUsers:not(.d-none) {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1335,7 +1425,11 @@ body.admin section#viewUsers:not(.d-none) {
 }
 
 /* Sticky footer: el contenido ocupa el alto y el footer cae al final */
-body { min-height: 100vh; display: flex; flex-direction: column; }
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ============================================
    SIDEBAR LATERAL IZQUIERDO
@@ -1431,18 +1525,18 @@ body.sidebar-open .top-navbar {
 }
 
 /* Asegurar que el contenedor no bloquee el botón */
-.top-navbar .container-fluid > #sidebarToggle {
+.top-navbar .container-fluid>#sidebarToggle {
   position: relative !important;
   z-index: 1052 !important;
   pointer-events: auto !important;
 }
 
 /* Asegurar que ningún elemento bloquee el botón */
-.top-navbar .container-fluid > * {
+.top-navbar .container-fluid>* {
   position: relative;
 }
 
-.top-navbar .container-fluid > #sidebarToggle {
+.top-navbar .container-fluid>#sidebarToggle {
   z-index: 1053 !important;
 }
 
@@ -1480,12 +1574,12 @@ body.sidebar-open .top-navbar {
     white-space: normal;
     max-width: 400px;
   }
-  
+
   /* Asegurar que los botones se vean bien en tablet */
   .top-navbar .d-flex.ms-auto {
     gap: 0.75rem !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn {
     padding: 0.5rem 1rem !important;
     white-space: nowrap !important;
@@ -1496,7 +1590,7 @@ body.sidebar-open .top-navbar {
   .top-navbar .navbar-brand span {
     max-width: 500px;
   }
-  
+
   /* Botones completos en desktop */
   .top-navbar .d-flex.ms-auto .btn span:not(.badge) {
     display: inline !important;
@@ -1511,7 +1605,7 @@ body.sidebar-open .top-navbar {
     min-height: 56px !important;
     overflow: visible !important;
   }
-  
+
   .top-navbar .container-fluid {
     gap: 0.25rem !important;
     flex-wrap: nowrap !important;
@@ -1522,12 +1616,12 @@ body.sidebar-open .top-navbar {
     overflow: visible !important;
     width: 100% !important;
   }
-  
+
   /* Ocultar el logo en móvil - el botón hamburguesa ocupará su lugar */
   .top-navbar .navbar-brand {
     display: none !important;
   }
-  
+
   /* Botón sidebar toggle - en la posición del logo, completamente a la izquierda */
   .top-navbar #sidebarToggle {
     padding: 0.5rem !important;
@@ -1545,7 +1639,7 @@ body.sidebar-open .top-navbar {
     align-self: center !important;
     margin-left: 0 !important;
   }
-  
+
   /* Contenedor de botones derecho - prioridad máxima, tamaño fijo */
   .top-navbar .d-flex.ms-auto {
     flex-shrink: 0 !important;
@@ -1564,7 +1658,7 @@ body.sidebar-open .top-navbar {
     position: relative !important;
     z-index: 10 !important;
   }
-  
+
   /* Botones del navbar - solo iconos en móvil, tamaño fijo */
   .top-navbar .d-flex.ms-auto .btn {
     padding: 0.35rem !important;
@@ -1585,31 +1679,31 @@ body.sidebar-open .top-navbar {
     position: relative !important;
     white-space: nowrap !important;
   }
-  
+
   /* Asegurar que el botón de cotización tenga espacio para el badge */
   .top-navbar .d-flex.ms-auto #openCartBtn {
     padding-right: 0.45rem !important;
     overflow: visible !important;
     position: relative !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn span:not(.badge) {
     display: none !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn i {
     margin: 0 !important;
     font-size: 1rem !important;
     line-height: 1 !important;
   }
-  
+
   /* Ajustar badge del contador en móvil */
   #openCartBtn {
     padding: 0.35rem !important;
     padding-right: 0.4rem !important;
     padding-left: 0.4rem !important;
   }
-  
+
   #cartCount {
     right: -2px !important;
     top: -6px !important;
@@ -1700,7 +1794,7 @@ body.sidebar-open .top-navbar {
   position: relative;
 }
 
-.sidebar-header-top > div {
+.sidebar-header-top>div {
   margin-bottom: 0;
 }
 
@@ -1841,7 +1935,7 @@ body.sidebar-open .top-navbar {
 
 /* Cuando el sidebar está activo en desktop */
 @media (min-width: 992px) {
-  .sidebar.active ~ .main-content {
+  .sidebar.active~.main-content {
     margin-left: 280px;
   }
 }
@@ -1885,14 +1979,14 @@ body.sidebar-open .top-navbar {
   .sidebar {
     width: 280px;
   }
-  
-  .sidebar.active ~ .sidebar-overlay {
+
+  .sidebar.active~.sidebar-overlay {
     opacity: 1;
     visibility: visible;
   }
-  
+
   /* En móvil, cuando el sidebar está abierto, el contenido no se mueve */
-  .sidebar.active ~ .main-content {
+  .sidebar.active~.main-content {
     margin-left: 0;
   }
 }
@@ -1902,20 +1996,20 @@ body.sidebar-open .top-navbar {
   .sidebar {
     transform: translateX(-100%);
   }
-  
+
   .sidebar.active {
     transform: translateX(0);
   }
-  
+
   .main-content {
     margin-left: 0;
     transition: margin-left var(--transition-base);
   }
-  
-  .sidebar.active ~ .main-content {
+
+  .sidebar.active~.main-content {
     margin-left: 280px;
   }
-  
+
   .sidebar-overlay {
     display: none;
   }
@@ -1957,26 +2051,26 @@ body.sidebar-open .top-navbar {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
   }
-  
+
   .main-content .container-fluid {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  
+
   /* Reducir padding de cards en móvil */
   .card {
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-  
+
   .card-header {
     padding: 1rem 0.75rem !important;
   }
-  
+
   .card-body {
     padding: 1rem 0.75rem !important;
   }
-  
+
   /* Reducir padding de contenedores internos */
   .card .container-fluid,
   .card .row {
@@ -1985,24 +2079,24 @@ body.sidebar-open .top-navbar {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  
+
   .card .col,
   .card [class*="col-"] {
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
   }
-  
+
   /* Optimizar gaps y márgenes */
   .card .row {
     margin-left: -0.5rem !important;
     margin-right: -0.5rem !important;
   }
-  
+
   /* Reducir márgenes de elementos */
   .product-card {
     margin-bottom: 1rem !important;
   }
-  
+
   /* Optimizar tabs */
   .nav-tabs {
     margin-left: 0 !important;
@@ -2010,18 +2104,28 @@ body.sidebar-open .top-navbar {
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
   }
-  
+
   .nav-tabs .nav-link {
     padding: 0.5rem 0.75rem !important;
   }
-  
+
   /* Optimizar botones de alfabeto - centrar letras */
   #alphabetNav {
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
     gap: 0.25rem !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: fit-content !important;
   }
-  
+
+  /* Asegurar que alphabet-scroll no tenga scroll vertical */
+  .alphabet-scroll {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: fit-content !important;
+  }
+
   .alphabet-btn {
     display: flex !important;
     align-items: center !important;
@@ -2036,9 +2140,9 @@ body.sidebar-open .top-navbar {
     font-size: 0.85rem !important;
     font-weight: 500 !important;
   }
-  
+
   /* Asegurar que el botón "Todos" también esté centrado y con ancho adecuado */
-  #alphabetNav > button:first-child {
+  #alphabetNav>button:first-child {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2049,33 +2153,33 @@ body.sidebar-open .top-navbar {
     padding: 0.25rem 0.75rem !important;
     white-space: nowrap !important;
   }
-  
+
   /* Optimizar formularios */
   .form-control,
   .form-select {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
   }
-  
+
   /* Reducir padding de modales en móvil */
   .modal-body {
     padding: 1rem 0.75rem !important;
   }
-  
+
   .modal-header {
     padding: 0.75rem !important;
   }
-  
+
   .modal-footer {
     padding: 0.75rem !important;
   }
-  
+
   /* Optimizar tablas - reducir padding */
   .table th,
   .table td {
     padding: 0.5rem 0.4rem !important;
   }
-  
+
   /* Asegurar que las tablas se vean completamente en móvil */
   .table-responsive {
     overflow-x: auto !important;
@@ -2085,7 +2189,7 @@ body.sidebar-open .top-navbar {
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-  
+
   /* Asegurar que las tablas tengan el espacio necesario */
   #viewHistory .table-responsive,
   #viewClients .table-responsive,
@@ -2094,7 +2198,7 @@ body.sidebar-open .top-navbar {
     width: 100%;
     display: block;
   }
-  
+
   /* Asegurar que las tablas no se corten */
   #viewHistory .card-body,
   #viewClients .card-body,
@@ -2103,7 +2207,7 @@ body.sidebar-open .top-navbar {
     overflow: visible !important;
     padding-bottom: 1rem !important;
   }
-  
+
   /* Asegurar que las tablas tengan ancho mínimo para scroll horizontal */
   #historyTable,
   #clientsTable,
@@ -2112,45 +2216,45 @@ body.sidebar-open .top-navbar {
     min-width: 600px;
     width: 100%;
   }
-  
+
   /* Optimizar contenedores de búsqueda */
   #productSearch {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
   }
-  
+
   /* Reducir márgenes de secciones */
   .mb-3,
   .mb-4,
   .mb-5 {
     margin-bottom: 1rem !important;
   }
-  
+
   /* Optimizar espacios entre elementos */
   .gap-2 {
     gap: 0.5rem !important;
   }
-  
+
   .gap-3 {
     gap: 0.75rem !important;
   }
-  
+
   /* Asegurar que los elementos usen el 100% del ancho disponible */
   .w-100 {
     width: 100% !important;
   }
-  
+
   /* Reducir padding de listas y elementos de navegación */
   .list-group-item {
     padding: 0.75rem 0.5rem !important;
   }
-  
+
   /* Optimizar espacios de botones en grupos */
   .btn-group,
   .input-group {
     width: 100% !important;
   }
-  
+
   /* Reducir padding de alertas */
   .alert {
     padding: 0.75rem 0.5rem !important;
@@ -2323,6 +2427,7 @@ body.modal-open #confirmModal.show {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2463,6 +2568,7 @@ input::placeholder {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -2519,18 +2625,18 @@ input::placeholder {
     top: -9px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-  
+
   #openCartBtn {
     padding-right: 0.75rem !important;
   }
-  
+
   /* Ajustar botones en tablet pequeña - ocultar texto pero mantener iconos */
   .top-navbar .d-flex.ms-auto {
     gap: 0.5rem !important;
     flex-shrink: 0 !important;
     min-width: auto !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn {
     padding: 0.5rem 0.75rem !important;
     font-size: 0.85rem !important;
@@ -2539,28 +2645,28 @@ input::placeholder {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn span:not(.badge) {
     display: none !important;
   }
-  
+
   .top-navbar .d-flex.ms-auto .btn i {
     font-size: 1.1rem !important;
     margin: 0 !important;
   }
-  
+
   /* Ajustar navbar-brand para dar más espacio a los botones */
   .top-navbar .navbar-brand {
     max-width: calc(100% - 150px) !important;
     flex-shrink: 1 !important;
     min-width: 0 !important;
   }
-  
+
   .top-navbar .navbar-brand span {
     font-size: 0.9rem !important;
     max-width: 200px !important;
   }
-  
+
   /* Ajustar sidebar toggle */
   .top-navbar #sidebarToggle {
     min-width: 44px !important;
@@ -2582,7 +2688,7 @@ input::placeholder {
     top: -7px !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-  
+
   #openCartBtn {
     padding-right: 0.5rem !important;
     padding-left: 0.5rem !important;
@@ -2595,9 +2701,12 @@ input::placeholder {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(-50%, -50%) scale(1);
   }
+
   50% {
     transform: translate(-50%, -50%) scale(1.1);
   }
@@ -2664,7 +2773,8 @@ input::placeholder {
   border: 2px solid #e9ecef;
   font-weight: 500;
   transition: all var(--transition-fast);
-  padding-right: 2.5rem !important; /* Espacio suficiente para la flecha del select */
+  padding-right: 2.5rem !important;
+  /* Espacio suficiente para la flecha del select */
 }
 
 .unit-selector:focus {
@@ -2782,17 +2892,32 @@ section {
   animation-fill-mode: both;
 }
 
-#productsContainer .product-card:nth-child(1) { animation-delay: 0.05s; }
-#productsContainer .product-card:nth-child(2) { animation-delay: 0.1s; }
-#productsContainer .product-card:nth-child(3) { animation-delay: 0.15s; }
-#productsContainer .product-card:nth-child(4) { animation-delay: 0.2s; }
-#productsContainer .product-card:nth-child(5) { animation-delay: 0.25s; }
+#productsContainer .product-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+#productsContainer .product-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+#productsContainer .product-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+#productsContainer .product-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+#productsContainer .product-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
 
 @keyframes slideUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2929,6 +3054,7 @@ main.container {
 
 /* REGLA FINAL RESPONSIVE: Asegurar que los botones del top-navbar se vean completamente en móvil */
 @media (max-width: 575px) {
+
   /* Asegurar que el container-fluid tenga espacio suficiente */
   .top-navbar .container-fluid {
     overflow: visible !important;
@@ -2938,7 +3064,7 @@ main.container {
     padding-right: 0.5rem !important;
     box-sizing: border-box !important;
   }
-  
+
   /* Sidebar toggle - completamente a la izquierda */
   .top-navbar #sidebarToggle {
     width: 44px !important;
@@ -2954,12 +3080,12 @@ main.container {
     flex-shrink: 0 !important;
     font-size: 1.25rem !important;
   }
-  
+
   /* Ocultar el logo en móvil - el botón hamburguesa ocupará su posición */
   .top-navbar .navbar-brand {
     display: none !important;
   }
-  
+
   /* Contenedor de botones - prioridad máxima */
   .top-navbar .d-flex.ms-auto {
     flex-shrink: 0 !important;
@@ -2975,7 +3101,7 @@ main.container {
     align-items: center !important;
     justify-content: flex-end !important;
   }
-  
+
   /* Botones - tamaño fijo y visible */
   .top-navbar .d-flex.ms-auto .btn {
     flex-shrink: 0 !important;
@@ -2995,13 +3121,13 @@ main.container {
     justify-content: center !important;
     white-space: nowrap !important;
   }
-  
+
   /* Asegurar que el botón de cotización tenga espacio para el badge */
   .top-navbar .d-flex.ms-auto #openCartBtn {
     padding-right: 0.45rem !important;
     overflow: visible !important;
   }
-  
+
   /* Badge ajustado */
   #cartCount {
     right: -2px !important;
@@ -3015,24 +3141,25 @@ main.container {
 
 /* REGLA FINAL: Forzar que los botones del top-navbar SIEMPRE se vean completamente en móvil */
 @media (max-width: 575px) {
+
   /* Priorizar completamente los botones */
   .top-navbar .container-fluid {
     justify-content: space-between !important;
     align-items: center !important;
   }
-  
+
   /* Reducir logo al mínimo para dar espacio a los botones */
   .top-navbar .navbar-brand {
     max-width: calc(100vw - 130px) !important;
     min-width: 0 !important;
     flex: 0 1 auto !important;
   }
-  
+
   .top-navbar .navbar-brand img.brand-logo {
     height: 22px !important;
     max-width: 40px !important;
   }
-  
+
   /* Asegurar espacio fijo para botones - NO pueden reducirse */
   .top-navbar .d-flex.ms-auto {
     flex: 0 0 92px !important;
@@ -3042,7 +3169,7 @@ main.container {
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
   }
-  
+
   /* Botones tamaño fijo - completamente visibles */
   .top-navbar .d-flex.ms-auto .btn {
     flex: 0 0 40px !important;
