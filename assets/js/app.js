@@ -2,11 +2,11 @@
   "use strict";
 
   // Manejador de errores global para suprimir errores de extensiones de Chrome
-  window.addEventListener('error', function(event) {
+  window.addEventListener('error', function (event) {
     // Suprimir el error común de extensiones de Chrome que no afecta la funcionalidad
     const errorMessage = event.message || event.error?.message || '';
-    if (errorMessage.includes('message channel closed') || 
-        errorMessage.includes('asynchronous response')) {
+    if (errorMessage.includes('message channel closed') ||
+      errorMessage.includes('asynchronous response')) {
       event.preventDefault();
       event.stopPropagation();
       return true;
@@ -14,11 +14,11 @@
   }, true);
 
   // Manejador para promesas rechazadas no capturadas
-  window.addEventListener('unhandledrejection', function(event) {
+  window.addEventListener('unhandledrejection', function (event) {
     // Suprimir el error común de extensiones de Chrome
     const errorMessage = event.reason?.message || event.reason?.toString() || '';
-    if (errorMessage.includes('message channel closed') || 
-        errorMessage.includes('asynchronous response')) {
+    if (errorMessage.includes('message channel closed') ||
+      errorMessage.includes('asynchronous response')) {
       event.preventDefault();
       event.stopImmediatePropagation();
       return true;
@@ -109,7 +109,7 @@
   const $quoteDuracionAnalisis = document.getElementById("quoteDuracionAnalisis");
   const $quoteNota = document.getElementById("quoteNota");
   const $clientDropdown = document.getElementById("clientDropdown");
-  
+
   // Variable para almacenar los contactos disponibles del cliente seleccionado
   let availableContactos = [];
   const $historyTableBody = document.querySelector("#historyTable tbody");
@@ -128,20 +128,20 @@
   const $btnDeleteProducts = document.getElementById("btnDeleteProducts");
   const $productSearch = document.getElementById("productSearch");
   const $scrollTopBtn = document.getElementById("scrollTopBtn");
-  
+
   // Sidebar
   const $sidebarToggle = document.getElementById("sidebarToggle");
   const $sidebarToggleInSidebar = document.getElementById("sidebarToggleInSidebar");
   const $sidebar = document.getElementById("sidebar");
   const $sidebarOverlay = document.getElementById("sidebarOverlay");
-  
+
   // Referencias a los handlers del sidebar para poder removerlos
   let sidebarToggleHandler = null;
   let sidebarToggleTouchHandler = null;
   let sidebarToggleInSidebarHandler = null;
   let sidebarOverlayHandler = null;
   let sidebarResizeHandler = null;
-  
+
   // Productos - crear/editar
   const $btnAddProduct = document.getElementById("btnAddProduct");
   const $btnEditProduct = document.getElementById("btnEditProduct");
@@ -153,12 +153,12 @@
   const $btnAddProceso = document.getElementById("btnAddProceso");
   const $btnSaveProduct = document.getElementById("btnSaveProduct");
   const $productFormModal = document.getElementById("productFormModal");
-  
+
   // Modal seleccionar producto para editar
   const $selectProductModal = document.getElementById("selectProductModal");
   const $selectProductList = document.getElementById("selectProductList");
   const $selectProductSearch = document.getElementById("selectProductSearch");
-  
+
   // Modal eliminar productos
   const $deleteProductsModal = document.getElementById("deleteProductsModal");
   const $deleteProductsList = document.getElementById("deleteProductsList");
@@ -167,7 +167,7 @@
   const $btnConfirmDeleteProducts = document.getElementById("btnConfirmDeleteProducts");
   const $btnDeleteAllProducts = document.getElementById("btnDeleteAllProducts");
   const $deleteProductsCount = document.getElementById("deleteProductsCount");
-  
+
   // Modal eliminar clientes
   const $deleteClientsModal = document.getElementById("deleteClientsModal");
   const $deleteClientsList = document.getElementById("deleteClientsList");
@@ -178,7 +178,7 @@
   const $btnDeleteClients = document.getElementById("btnDeleteClients");
   const $statsCanvas = document.getElementById("statsTopProducts");
   const $noStatsEl = document.getElementById("noStats");
-  
+
   // Clientes
   const $clientsTableBody = document.getElementById("clientsTableBody");
   const $noClients = document.getElementById("noClients");
@@ -197,7 +197,7 @@
   const $btnAddContacto = document.getElementById("btnAddContacto");
   const $btnSaveClient = document.getElementById("btnSaveClient");
   const $clientFormModal = document.getElementById("clientFormModal");
-  
+
   // Contactos
   const $contactosTableBody = document.getElementById("contactosTableBody");
   const $noContactos = document.getElementById("noContactos");
@@ -219,7 +219,7 @@
   const $btnDeselectAllContactos = document.getElementById("btnDeselectAllContactos");
   const $btnConfirmDeleteContactos = document.getElementById("btnConfirmDeleteContactos");
   const $deleteContactosCount = document.getElementById("deleteContactosCount");
-  
+
   // Login y usuarios
   const $loginPage = document.getElementById("loginPage");
   const $mainContent = document.getElementById("mainContent");
@@ -231,7 +231,7 @@
   const $loginSubmitBtn = document.getElementById("loginSubmitBtn");
   const $logoutBtn = document.getElementById("logoutBtn");
   const $userInfo = document.getElementById("userInfo");
-  
+
   // Verificación de código
   const $verificationModal = document.getElementById("verificationModal");
   const $verificationForm = document.getElementById("verificationForm");
@@ -241,11 +241,11 @@
   const $resendCodeBtn = document.getElementById("resendCodeBtn");
   const $codeExpiryTime = document.getElementById("codeExpiryTime");
   const $closeVerificationModal = document.getElementById("closeVerificationModal");
-  
+
   // Almacenar información de verificación temporal
   let pendingVerification = null;
   let verificationTimer = null;
-  
+
   // Gestión de usuarios
   const $usersTableBody = document.getElementById("usersTableBody");
   const $noUsers = document.getElementById("noUsers");
@@ -267,7 +267,7 @@
   const $passwordHint = document.getElementById("passwordHint");
   const $passwordConfirmRequired = document.getElementById("passwordConfirmRequired");
   const $passwordConfirmHint = document.getElementById("passwordConfirmHint");
-  
+
   let logoAsset = null; // { el?: HTMLImageElement, dataUrl?: string }
   let topProductsChart = null;
   let currentUser = null;
@@ -289,10 +289,10 @@
   function initDefaultUsers() {
     try {
       const users = getUsers();
-      
+
       // Verificar si ya existen usuarios (no solo contar, verificar que sean válidos)
       const hasValidUsers = Array.isArray(users) && users.length > 0 && users.some(u => u.id && u.email);
-      
+
       // Solo crear usuarios por defecto si NO hay ningún usuario en el sistema (primera vez)
       // Si ya hay usuarios, no recrear usuarios por defecto aunque hayan sido eliminados
       if (!hasValidUsers) {
@@ -300,9 +300,9 @@
         const defaultUsers = [
           {
             id: "USER-ADMIN-001",
-            username: "admin",
-            email: "admin@olgroup.com",
-            password: hashPassword("admin"),
+            username: "Jose Vega",
+            email: "jose.lv91011@gmail.com",
+            password: hashPassword("1023629068"),
             name: "Administrador",
             role: "admin",
             active: true,
@@ -310,16 +310,16 @@
           },
           {
             id: "USER-VENDEDOR-001",
-            username: "vendedor",
-            email: "vendedor@olgroup.com",
-            password: hashPassword("vendedor"),
+            username: "Jhon Vega",
+            email: "jhon020999@gmail.com",
+            password: hashPassword("1023629068"),
             name: "Vendedor",
             role: "vendedor",
             active: true,
             createdAt: new Date().toISOString()
           }
         ];
-        
+
         saveUsers(defaultUsers);
         console.log("Usuarios por defecto creados (primera inicialización)");
       } else {
@@ -387,23 +387,23 @@
         showAlert("Error al guardar usuarios: datos inválidos.", "error");
         return false;
       }
-      
+
       // Validar que los usuarios tengan estructura básica
       const validUsers = users.filter(u => u && (u.id || u.email || u.username));
-      
+
       if (validUsers.length !== users.length) {
         console.warn("Algunos usuarios fueron filtrados por ser inválidos");
       }
-      
+
       // Guardar en localStorage
       localStorage.setItem("olgroup_users", JSON.stringify(validUsers));
-      
+
       // Verificar que se guardó correctamente
       const verification = localStorage.getItem("olgroup_users");
       if (!verification) {
         throw new Error("No se pudo verificar el guardado");
       }
-      
+
       console.log(`Usuarios guardados correctamente: ${validUsers.length} usuarios`);
       return true;
     } catch (error) {
@@ -429,7 +429,7 @@
       } else {
         sessionStorage.removeItem("olgroup_current_user");
       }
-    } catch {}
+    } catch { }
   }
 
   // Funciones de verificación de código
@@ -480,23 +480,23 @@
       const EMAILJS_TEMPLATE_ID = 'template_a5mi2mc';
       const EMAILJS_PUBLIC_KEY = 'ZUesJyPvBcqMQfcP1';
       // ============================================
-      
+
       // Verificar que EmailJS esté disponible
       if (typeof emailjs === 'undefined' || typeof emailjs.send !== 'function') {
         console.error('❌ EmailJS no está cargado o no está disponible.');
         console.warn('⚠️ Código de verificación (solo para desarrollo):', code);
         console.warn('📝 Asegúrate de que el script de EmailJS esté cargado correctamente.');
         console.warn('🔗 Script esperado: https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js');
-        
+
         // Simular envío exitoso después de 1 segundo para permitir desarrollo
         setTimeout(() => {
           resolve({ success: true, code: code });
         }, 1000);
         return;
       }
-      
+
       console.log('✅ EmailJS está disponible y listo para usar');
-      
+
       // Preparar los parámetros del template
       // IMPORTANTE: Estos nombres deben coincidir EXACTAMENTE con las variables en tu plantilla de EmailJS
       const templateParams = {
@@ -509,13 +509,13 @@
         name: userName || 'Usuario',
         code: code
       };
-      
+
       console.log('📧 Enviando código de verificación a:', email);
       console.log('📋 Parámetros del template:', templateParams);
       console.log('🔑 Service ID:', EMAILJS_SERVICE_ID);
       console.log('📝 Template ID:', EMAILJS_TEMPLATE_ID);
       console.log('🔐 Public Key:', EMAILJS_PUBLIC_KEY);
-      
+
       // Inicializar EmailJS con la Public Key
       try {
         if (typeof emailjs.init === 'function') {
@@ -524,41 +524,41 @@
       } catch (initError) {
         console.warn('⚠️ EmailJS init error (puede estar ya inicializado):', initError);
       }
-      
+
       // Enviar email usando la API de EmailJS v4
       // Nota: En v4, la Public Key se puede pasar como 4to parámetro o usar init()
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-      .then((response) => {
-        console.log('✅ Email enviado exitosamente!');
-        console.log('📊 Respuesta:', {
-          status: response.status,
-          text: response.text
+        .then((response) => {
+          console.log('✅ Email enviado exitosamente!');
+          console.log('📊 Respuesta:', {
+            status: response.status,
+            text: response.text
+          });
+          console.log('✉️ Código de verificación enviado a:', email);
+          resolve({ success: true });
+        })
+        .catch((error) => {
+          console.error('❌ Error al enviar código de verificación');
+          console.error('📊 Detalles del error:', {
+            status: error?.status || 'N/A',
+            text: error?.text || 'N/A',
+            message: error?.message || 'Error desconocido',
+            error: error
+          });
+
+          // Mostrar el código en consola para debugging
+          console.warn('⚠️ Código de verificación (para debugging):', code);
+          console.warn('⚠️ Checklist de verificación:');
+          console.warn('  1. Service ID correcto?', EMAILJS_SERVICE_ID);
+          console.warn('  2. Template ID correcto?', EMAILJS_TEMPLATE_ID);
+          console.warn('  3. Public Key correcto?', EMAILJS_PUBLIC_KEY);
+          console.warn('  4. Plantilla tiene variables? to_email, to_name, verification_code, from_name');
+          console.warn('  5. Servicio de email activo en EmailJS?');
+          console.warn('  6. Revisa la consola de EmailJS para más detalles');
+
+          // Resolver con el código para permitir continuar en caso de error
+          resolve({ success: true, code: code, error: error });
         });
-        console.log('✉️ Código de verificación enviado a:', email);
-        resolve({ success: true });
-      })
-      .catch((error) => {
-        console.error('❌ Error al enviar código de verificación');
-        console.error('📊 Detalles del error:', {
-          status: error?.status || 'N/A',
-          text: error?.text || 'N/A',
-          message: error?.message || 'Error desconocido',
-          error: error
-        });
-        
-        // Mostrar el código en consola para debugging
-        console.warn('⚠️ Código de verificación (para debugging):', code);
-        console.warn('⚠️ Checklist de verificación:');
-        console.warn('  1. Service ID correcto?', EMAILJS_SERVICE_ID);
-        console.warn('  2. Template ID correcto?', EMAILJS_TEMPLATE_ID);
-        console.warn('  3. Public Key correcto?', EMAILJS_PUBLIC_KEY);
-        console.warn('  4. Plantilla tiene variables? to_email, to_name, verification_code, from_name');
-        console.warn('  5. Servicio de email activo en EmailJS?');
-        console.warn('  6. Revisa la consola de EmailJS para más detalles');
-        
-        // Resolver con el código para permitir continuar en caso de error
-        resolve({ success: true, code: code, error: error });
-      });
     });
   }
 
@@ -566,17 +566,17 @@
     if (verificationTimer) {
       clearInterval(verificationTimer);
     }
-    
+
     let timeLeft = expiryMinutes * 60; // Convertir a segundos
-    
+
     const updateTimer = () => {
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
-      
+
       if ($codeExpiryTime) {
         $codeExpiryTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
       }
-      
+
       if (timeLeft <= 0) {
         clearInterval(verificationTimer);
         if (pendingVerification) {
@@ -592,21 +592,21 @@
         }
         return;
       }
-      
+
       timeLeft--;
     };
-    
+
     updateTimer(); // Actualizar inmediatamente
     verificationTimer = setInterval(updateTimer, 1000);
   }
 
   function showVerificationModal(email, user) {
     if (!$verificationModal) return;
-    
+
     // Generar código de verificación
     const code = generateVerificationCode();
     const expiryTime = new Date(Date.now() + 5 * 60000); // 5 minutos
-    
+
     // Guardar información de verificación
     pendingVerification = {
       code: code,
@@ -614,12 +614,12 @@
       user: user,
       expiryTime: expiryTime
     };
-    
+
     // Mostrar email en el modal
     if ($verificationEmail) {
       $verificationEmail.textContent = email;
     }
-    
+
     // Limpiar campos
     if ($verificationCode) {
       $verificationCode.value = '';
@@ -627,7 +627,7 @@
     if ($verificationError) {
       $verificationError.classList.add('d-none');
     }
-    
+
     // Enviar código por email
     sendVerificationEmail(email, code, user.name || user.username)
       .then((result) => {
@@ -638,17 +638,17 @@
           $verificationError.classList.add('alert-info');
         }
       });
-    
+
     // Iniciar temporizador
     startVerificationTimer(5);
-    
+
     // Mostrar modal
     const modal = new bootstrap.Modal($verificationModal, {
       backdrop: 'static',
       keyboard: false
     });
     modal.show();
-    
+
     // Enfocar el campo de código
     setTimeout(() => {
       if ($verificationCode) {
@@ -661,56 +661,56 @@
     if (!pendingVerification) {
       return { success: false, error: 'No hay verificación pendiente.' };
     }
-    
+
     // Verificar expiración
     if (new Date() > pendingVerification.expiryTime) {
       pendingVerification = null;
       return { success: false, error: 'El código de verificación ha expirado.' };
     }
-    
+
     // Verificar código
     if (inputCode === pendingVerification.code) {
       const user = pendingVerification.user;
       pendingVerification = null;
-      
+
       if (verificationTimer) {
         clearInterval(verificationTimer);
         verificationTimer = null;
       }
-      
+
       return { success: true, user: user };
     }
-    
+
     return { success: false, error: 'Código de verificación incorrecto.' };
   }
 
   function login(email, password) {
     try {
       const users = getUsers();
-      
+
       // Depuración: mostrar información en consola
       console.log("=== INTENTO DE LOGIN ===");
       console.log("Email/Username:", email);
       console.log("Total de usuarios en sistema:", users.length);
-      console.log("Usuarios disponibles:", users.map(u => ({ 
-        email: u.email, 
-        username: u.username, 
+      console.log("Usuarios disponibles:", users.map(u => ({
+        email: u.email,
+        username: u.username,
         name: u.name,
-        active: u.active 
+        active: u.active
       })));
-      
+
       if (users.length === 0) {
         console.error("ERROR: No hay usuarios en el sistema. Verifica el localStorage.");
-        return { 
-          success: false, 
-          inactive: false, 
-          error: "No hay usuarios registrados en el sistema. Por favor, contacta al administrador." 
+        return {
+          success: false,
+          inactive: false,
+          error: "No hay usuarios registrados en el sistema. Por favor, contacta al administrador."
         };
       }
-      
+
       const hashedPassword = hashPassword(password);
       console.log("Contraseña hasheada:", hashedPassword);
-      
+
       // PRIMERO: Verificar si el usuario existe (solo por email/username, sin verificar contraseña)
       // Buscar por email primero, si no tiene email buscar por username (retrocompatibilidad)
       const user = users.find(
@@ -724,8 +724,8 @@
       // Si el usuario NO existe
       if (!user) {
         console.warn("Usuario no encontrado:", email);
-        return { 
-          success: false, 
+        return {
+          success: false,
           inactive: false,
           userNotFound: true,
           error: "El correo electrónico no está registrado en el sistema."
@@ -733,44 +733,44 @@
       }
 
       console.log("Usuario encontrado:", user.email || user.username);
-      
+
       // SEGUNDO: Verificar la contraseña del usuario encontrado
       const passwordMatch = user.password === hashedPassword;
-      
+
       console.log("Verificación de contraseña:", {
         storedPassword: user.password,
         inputPassword: hashedPassword,
         passwordMatch: passwordMatch
       });
-      
+
       // Si la contraseña es incorrecta
       if (!passwordMatch) {
         console.warn("Contraseña incorrecta para usuario:", user.email || user.username);
-        return { 
-          success: false, 
+        return {
+          success: false,
           inactive: false,
           wrongPassword: true,
           error: "La contraseña es incorrecta."
         };
       }
-      
+
       // Si el usuario existe pero está inactivo
       if (user.active === false) {
         console.warn("Usuario inactivo");
         return { success: false, inactive: true };
       }
-      
+
       // Si el usuario existe, la contraseña es correcta y está activo, mostrar modal de verificación
       const userEmail = user.email || email;
       showVerificationModal(userEmail, user);
-      
+
       return { success: true, requiresVerification: true };
     } catch (error) {
       console.error("Error en función login:", error);
-      return { 
-        success: false, 
-        inactive: false, 
-        error: "Error al procesar el login. Por favor, recarga la página." 
+      return {
+        success: false,
+        inactive: false,
+        error: "Error al procesar el login. Por favor, recarga la página."
       };
     }
   }
@@ -796,7 +796,7 @@
 
     if ($loginPage) $loginPage.classList.add("d-none");
     if ($mainContent) $mainContent.classList.remove("d-none");
-    
+
     // Actualizar información del usuario
     if ($userInfo) {
       $userInfo.textContent = `${currentUser.name} (${currentUser.role === "admin" ? "Administrador" : "Vendedor"})`;
@@ -866,7 +866,7 @@
         }
 
         const loginResult = login(username, password);
-        
+
         // Rehabilitar botón
         if ($loginSubmitBtn) {
           $loginSubmitBtn.disabled = false;
@@ -1076,7 +1076,7 @@
     renderProductsByLetter(currentLetter);
     renderHistory();
     renderClients();
-    
+
     // Renderizar usuarios solo si es admin
     if (currentUser.role === "admin") {
       renderUsers();
@@ -1116,11 +1116,11 @@
     // Validar que el campo Duración de Análisis solo acepte números
     if ($quoteDuracionAnalisis) {
       // Prevenir escribir caracteres no numéricos
-      $quoteDuracionAnalisis.addEventListener("keydown", function(e) {
+      $quoteDuracionAnalisis.addEventListener("keydown", function (e) {
         // Permitir teclas especiales: backspace, delete, tab, escape, enter, y teclas de navegación
         if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-            (e.keyCode === 65 && e.ctrlKey === true) || // Ctrl+A
-            (e.keyCode >= 35 && e.keyCode <= 40)) { // Home, End, Left, Right, Up, Down
+          (e.keyCode === 65 && e.ctrlKey === true) || // Ctrl+A
+          (e.keyCode >= 35 && e.keyCode <= 40)) { // Home, End, Left, Right, Up, Down
           return;
         }
         // Permitir solo números
@@ -1128,15 +1128,15 @@
           e.preventDefault();
         }
       });
-      
+
       // Remover cualquier carácter no numérico al escribir
-      $quoteDuracionAnalisis.addEventListener("input", function(e) {
+      $quoteDuracionAnalisis.addEventListener("input", function (e) {
         // Remover cualquier carácter que no sea número
         this.value = this.value.replace(/[^0-9]/g, '');
       });
-      
+
       // Prevenir pegar texto que contenga caracteres no numéricos
-      $quoteDuracionAnalisis.addEventListener("paste", function(e) {
+      $quoteDuracionAnalisis.addEventListener("paste", function (e) {
         e.preventDefault();
         const paste = (e.clipboardData || window.clipboardData).getData('text');
         const numbersOnly = paste.replace(/[^0-9]/g, '');
@@ -1165,7 +1165,7 @@
     }
     if ($clientsExcelInput) $clientsExcelInput.addEventListener("change", onClientsExcelSelected);
     if ($btnExportClients) $btnExportClients.addEventListener("click", exportClientsToExcel);
-    
+
     // Resetear formulario de cliente al cerrar el modal
     const clientModalEl = document.getElementById("clientModal");
     if (clientModalEl && typeof bootstrap !== "undefined") {
@@ -1193,7 +1193,7 @@
     }
     if ($contactosExcelInput) $contactosExcelInput.addEventListener("change", onContactosExcelSelected);
     if ($btnExportContactos) $btnExportContactos.addEventListener("click", exportContactosToExcel);
-    
+
     // Resetear formulario de contacto al cerrar el modal
     const contactoModalEl = document.getElementById("contactoModal");
     if (contactoModalEl && typeof bootstrap !== "undefined") {
@@ -1208,7 +1208,7 @@
       if ($btnAddUser) $btnAddUser.addEventListener("click", () => openUserModal());
       if ($btnSaveUser) $btnSaveUser.addEventListener("click", saveUser);
       if ($btnExportUsers) $btnExportUsers.addEventListener("click", exportUsersToExcel);
-      
+
       // Resetear formulario de usuario al cerrar el modal
       const userModalEl = document.getElementById("userModal");
       if (userModalEl && typeof bootstrap !== "undefined") {
@@ -1228,11 +1228,11 @@
     // Ocultar todas las secciones primero y luego mostrar solo la activa
     hideAllSections();
     showSection("viewProducts");
-    
+
     // Asegurar que las secciones admin-only estén ocultas si no es admin
     // Esto se hace después de mostrar la sección activa para no interferir
     enforceRoleBasedVisibility();
-    
+
     // Asegurar que la pestaña "Productos y procesos" esté activa
     const nav = document.getElementById("mainNav");
     if (nav) {
@@ -1243,7 +1243,7 @@
         productsLink.classList.add("active");
       }
     }
-    
+
     setupMainNav();
 
     if ($openCartBtn) {
@@ -1293,7 +1293,7 @@
         openProductModal(true);
       });
     }
-    
+
     // Event listener para el buscador del modal de selección de productos
     if ($selectProductSearch) {
       $selectProductSearch.addEventListener("input", () => {
@@ -1306,7 +1306,7 @@
     if ($btnSaveProduct) {
       $btnSaveProduct.addEventListener("click", saveProduct);
     }
-    
+
     // Resetear formulario de producto al cerrar el modal
     if ($productModal && typeof bootstrap !== "undefined") {
       $productModal.addEventListener("hidden.bs.modal", () => {
@@ -1418,28 +1418,28 @@
       if (sidebarToggleTouchHandler) {
         $sidebarToggle.removeEventListener("touchend", sidebarToggleTouchHandler);
       }
-      
+
       // Forzar un reflow del DOM para asegurar que los estilos estén aplicados
       void $sidebarToggle.offsetHeight;
-      
+
       // Asegurar que el botón sea clickeable
       $sidebarToggle.style.pointerEvents = "auto";
       $sidebarToggle.style.zIndex = "1053";
       $sidebarToggle.style.cursor = "pointer";
       $sidebarToggle.style.position = "relative";
-      
+
       // Crear nuevos handlers y guardar referencias
-      sidebarToggleHandler = function(e) {
+      sidebarToggleHandler = function (e) {
         e.preventDefault();
         e.stopPropagation();
         toggleSidebar(e);
       };
-      sidebarToggleTouchHandler = function(e) {
+      sidebarToggleTouchHandler = function (e) {
         e.preventDefault();
         e.stopPropagation();
         toggleSidebar(e);
       };
-      
+
       // Agregar nuevos listeners con { passive: false } para poder prevenir el comportamiento por defecto
       $sidebarToggle.addEventListener("click", sidebarToggleHandler, { passive: false });
       $sidebarToggle.addEventListener("touchend", sidebarToggleTouchHandler, { passive: false });
@@ -1450,14 +1450,14 @@
       if (sidebarToggleInSidebarHandler) {
         $sidebarToggleInSidebar.removeEventListener("click", sidebarToggleInSidebarHandler);
       }
-      
+
       // Crear nuevo handler y guardar referencia
-      sidebarToggleInSidebarHandler = function(e) {
+      sidebarToggleInSidebarHandler = function (e) {
         e.preventDefault();
         e.stopPropagation();
         closeSidebar();
       };
-      
+
       // Agregar nuevo listener
       $sidebarToggleInSidebar.addEventListener("click", sidebarToggleInSidebarHandler);
     }
@@ -1467,14 +1467,14 @@
       if (sidebarOverlayHandler) {
         $sidebarOverlay.removeEventListener("click", sidebarOverlayHandler);
       }
-      
+
       // Crear nuevo handler y guardar referencia
-      sidebarOverlayHandler = function(e) {
+      sidebarOverlayHandler = function (e) {
         e.preventDefault();
         e.stopPropagation();
         closeSidebar();
       };
-      
+
       // Agregar nuevo listener
       $sidebarOverlay.addEventListener("click", sidebarOverlayHandler);
     }
@@ -1482,7 +1482,7 @@
     // Cerrar sidebar al hacer clic en un enlace de navegación en móvil
     const sidebarLinks = document.querySelectorAll(".sidebar-nav .nav-link");
     sidebarLinks.forEach(link => {
-      link.addEventListener("click", function() {
+      link.addEventListener("click", function () {
         if (window.innerWidth < 992) {
           closeSidebar();
         }
@@ -1502,7 +1502,7 @@
     if (sidebarResizeHandler) {
       window.removeEventListener("resize", sidebarResizeHandler);
     }
-    
+
     let resizeTimeout;
     sidebarResizeHandler = () => {
       clearTimeout(resizeTimeout);
@@ -1512,7 +1512,7 @@
         }
       }, 250);
     };
-    
+
     window.addEventListener("resize", sidebarResizeHandler);
   }
 
@@ -1525,7 +1525,7 @@
         const data = new Uint8Array(ev.target.result);
         const wb = XLSX.read(data, { type: "array" });
         const newProducts = buildProductsFromWorkbook(wb);
-        
+
         if (newProducts.length === 0) {
           showAlert("No se encontraron productos válidos en el archivo Excel.", "warning");
           return;
@@ -1533,7 +1533,7 @@
 
         // Confirmar si se deben agregar o reemplazar
         const existingProducts = productos || [];
-        
+
         if (existingProducts.length > 0) {
           const shouldAppend = await showConfirm(
             `Ya existen ${existingProducts.length} producto(s) registrados.\n\n` +
@@ -1736,11 +1736,11 @@
     const isAdmin = currentUser && currentUser.role === "admin";
     const viewStats = document.getElementById("viewStats");
     const viewUsers = document.getElementById("viewUsers");
-    
+
     // Controlar visibilidad del botón de eliminar productos
     // El CSS se encarga de mostrar/ocultar el botón según la clase admin del body
     // No necesitamos establecer display manualmente aquí
-    
+
     // Solo para vendedores: asegurar que las secciones admin estén ocultas
     // Esto es una medida de seguridad adicional, pero el sistema de pestañas
     // ya maneja la visibilidad correctamente
@@ -1774,7 +1774,7 @@
     const viewContactos = document.getElementById("viewContactos");
     const viewStats = document.getElementById("viewStats");
     const viewUsers = document.getElementById("viewUsers");
-    
+
     // Ocultar TODAS las secciones sin excepción, usando múltiples métodos para asegurar
     const sections = [viewProducts, viewHistory, viewClients, viewContactos, viewStats, viewUsers];
     sections.forEach(section => {
@@ -1789,15 +1789,15 @@
   function showSection(sectionId) {
     const section = document.getElementById(sectionId);
     if (!section) return;
-    
+
     const isAdmin = currentUser && currentUser.role === "admin";
     const isAdminSection = sectionId === "viewStats" || sectionId === "viewUsers";
-    
+
     // Si es una sección admin y el usuario no es admin, no mostrar
     if (isAdminSection && !isAdmin) {
       return;
     }
-    
+
     // Mostrar SOLO esta sección, asegurando que esté visible
     section.classList.remove("d-none");
     section.style.display = "block";
@@ -1807,19 +1807,19 @@
   function setupMainNav() {
     const nav = document.getElementById("mainNav");
     if (!nav) return;
-    
+
     const isAdmin = currentUser && currentUser.role === "admin";
-    
+
     const links = nav.querySelectorAll(".nav-link");
     links.forEach((link) => {
       link.addEventListener("click", () => {
         links.forEach((l) => l.classList.remove("active"));
         link.classList.add("active");
         const target = link.getAttribute("data-target");
-        
+
         // Ocultar TODAS las secciones primero
         hideAllSections();
-        
+
         // Mostrar solo la sección seleccionada
         if (target === "#viewHistory") {
           showSection("viewHistory");
@@ -1839,7 +1839,7 @@
           // Productos por defecto
           showSection("viewProducts");
         }
-        
+
         // Aplicar visibilidad basada en roles como medida de seguridad adicional
         // Solo para asegurar que las secciones admin no sean accesibles por vendedores
         // pero sin interferir con el sistema de pestañas
@@ -1858,7 +1858,7 @@
     if ($filterFrom) $filterFrom.value = "";
     if ($filterTo) $filterTo.value = "";
     renderHistory();
-    
+
     // Quitar el focus del botón después de limpiar
     if ($btnClearFilters) {
       $btnClearFilters.blur();
@@ -1870,7 +1870,7 @@
     if ($alphabetNav) {
       $alphabetNav.innerHTML = "";
     }
-    
+
     const fragment = document.createDocumentFragment();
     const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
@@ -1900,19 +1900,19 @@
       });
       fragment.appendChild(btn);
     });
-    
+
     // Agregar todos los botones al contenedor
     if ($alphabetNav) {
       $alphabetNav.appendChild(fragment);
     }
-    
+
     updateAlphabetActive();
     // Asegurar inicio al principio en móviles
-    try { 
+    try {
       if ($alphabetNav) {
         $alphabetNav.scrollLeft = 0;
       }
-    } catch {}
+    } catch { }
   }
 
   function updateAlphabetActive() {
@@ -1935,7 +1935,7 @@
     if (resetPage) {
       currentPage = 1;
     }
-    
+
     $productsContainer.innerHTML = "";
     const filteredList = productos
       .slice()
@@ -1986,7 +1986,7 @@
     $productsPagination.classList.remove("d-none");
     const $paginationList = $productsPagination.querySelector("ul.pagination");
     $paginationList.innerHTML = "";
-    
+
     // Limpiar información de paginación anterior si existe
     const existingInfo = $productsPagination.querySelector(".pagination-info");
     if (existingInfo) {
@@ -2009,7 +2009,7 @@
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
+
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
@@ -2100,7 +2100,7 @@
 
     // Obtener el valor unitario seleccionado o usar 'vrUnitUSD' por defecto
     const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
-    
+
     const header = document.createElement("div");
     header.className = "card-header d-flex justify-content-between align-items-start gap-2 flex-wrap";
     header.innerHTML = `
@@ -2182,7 +2182,7 @@
         const productId = e.target.getAttribute("data-product-id");
         const selectedValue = e.target.value;
         selectedUnitValues.set(productId, selectedValue);
-        
+
         // Recalcular totales del producto y actualizar la tabla
         const productData = productos.find(p => p.id === productId);
         if (productData) {
@@ -2200,10 +2200,10 @@
     const selectedUnit = selectedUnitValues.get(productId) || 'vrUnitUSD';
     let sumTotal = 0;
     let sumCMtra = 0;
-    
+
     // Obtener los análisis seleccionados
     const analisisSet = selectedAnalisis.get(productId) || new Set();
-    
+
     // Actualizar la columna Vr. Total en cada fila de la tabla
     const unitSelector = document.querySelector(`.unit-selector[data-product-id="${productId}"]`);
     if (unitSelector) {
@@ -2219,26 +2219,26 @@
               const qty = parseNumStrict(row.cantidad);
               const unitValue = parseNumStrict(row[selectedUnit]);
               let calculatedTotal = 0;
-              
+
               // Actualizar estilo de la fila
               if (isSelected) {
                 tr.classList.remove("table-secondary", "opacity-75");
               } else {
                 tr.classList.add("table-secondary", "opacity-75");
               }
-              
+
               // Solo calcular si el análisis está seleccionado y el valor unitario tiene un valor válido
               if (isSelected && unitValue > 0 && qty > 0) {
                 calculatedTotal = unitValue * qty;
                 sumTotal += calculatedTotal;
-                
+
                 // Sumar C. Mtra. solo si está seleccionado
                 const cMtra = parseNumStrict(row.cMtra ?? row.cMtra_g);
                 if (isFinite(cMtra)) {
                   sumCMtra += cMtra;
                 }
               }
-              
+
               // Actualizar la celda de Vr. Total (última columna)
               const totalCell = tr.querySelector('td:last-child');
               if (totalCell) {
@@ -2247,7 +2247,7 @@
             }
           });
         }
-        
+
         // Actualizar el subtotal y totales en el footer de la tabla
         const tfoot = card.querySelector('tfoot');
         if (tfoot) {
@@ -2261,7 +2261,7 @@
         }
       }
     }
-    
+
     // Guardar totales calculados en el objeto para uso en PDF
     product._sumCMtra = sumCMtra;
     product._sumTotal = sumTotal;
@@ -2293,10 +2293,10 @@
     const tbody = document.createElement("tbody");
     let sumCMtra = 0;
     let sumTotal = 0;
-    
+
     // Obtener el valor unitario seleccionado para este producto
     const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
-    
+
     // Obtener los análisis seleccionados para este producto
     // Solo se seleccionan cuando el checkbox del producto está marcado
     let selectedAnalisisSet = selectedAnalisis.get(product.id);
@@ -2305,7 +2305,7 @@
       selectedAnalisisSet = new Set();
       selectedAnalisis.set(product.id, selectedAnalisisSet);
     }
-    
+
     // Verificar si el producto está seleccionado para sincronizar los análisis
     const isProductSelected = selectedProductIds.has(product.id);
     if (isProductSelected && selectedAnalisisSet.size === 0) {
@@ -2315,7 +2315,7 @@
       // Si el producto no está seleccionado, asegurar que no haya análisis seleccionados
       selectedAnalisisSet.clear();
     }
-    
+
     product.procesos.forEach((row, index) => {
       const getText = (v) => (v == null ? "" : String(v));
       const valueOrFormat = (text, num, isMoney = false) => {
@@ -2325,15 +2325,15 @@
       };
 
       const isSelected = selectedAnalisisSet.has(index);
-      
+
       // Sumas usando el valor unitario seleccionado (solo si el análisis está seleccionado)
       if (isSelected) {
         const cMtraForSum = parseNumStrict(row.cMtra ?? row.cMtra_g);
         const qty = parseNumStrict(row.cantidad);
         const unitValue = parseNumStrict(row[selectedUnit]);
-        
+
         sumCMtra += cMtraForSum;
-        
+
         // Calcular el total usando el valor unitario seleccionado
         // Solo sumar si el valor unitario tiene un valor válido
         if (unitValue > 0 && qty > 0) {
@@ -2345,12 +2345,12 @@
       const qtyForDisplay = parseNumStrict(row.cantidad);
       const unitValueForDisplay = parseNumStrict(row[selectedUnit]);
       let calculatedTotal = 0;
-      
+
       // Solo calcular si el análisis está seleccionado y el valor unitario seleccionado tiene un valor válido
       if (isSelected && unitValueForDisplay > 0 && qtyForDisplay > 0) {
         calculatedTotal = unitValueForDisplay * qtyForDisplay;
       }
-      
+
       const tr = document.createElement("tr");
       tr.className = isSelected ? "" : "table-secondary opacity-75";
       tr.innerHTML = `
@@ -2371,28 +2371,28 @@
         <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnitUSD != null && row.vrUnitUSD !== "" ? formatMoney(parseNumStrict(row.vrUnitUSD)) : ""}</td>
         <td class=\"text-center\" style=\"white-space: nowrap;\">${calculatedTotal > 0 ? formatMoney(calculatedTotal) : ""}</td>
       `;
-      
+
       // Agregar event listener al checkbox
       const checkbox = tr.querySelector(".analisis-checkbox");
       checkbox.addEventListener("change", (e) => {
         const productId = e.target.getAttribute("data-product-id");
         const analisisIndex = parseInt(e.target.getAttribute("data-analisis-index"));
         const productData = productos.find(p => p.id === productId);
-        
+
         if (!productData) return;
-        
+
         let analisisSet = selectedAnalisis.get(productId);
         if (!analisisSet) {
           analisisSet = new Set();
           selectedAnalisis.set(productId, analisisSet);
         }
-        
+
         if (e.target.checked) {
           analisisSet.add(analisisIndex);
         } else {
           analisisSet.delete(analisisIndex);
         }
-        
+
         // Sincronizar checkbox del producto: si todos los análisis están seleccionados, marcar el producto
         // Si ningún análisis está seleccionado, desmarcar el producto
         const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
@@ -2411,14 +2411,14 @@
             }
           }
         }
-        
+
         // Actualizar UI de selección
         updateSelectionStateUI();
-        
+
         // Recalcular totales y actualizar la tabla
         updateProductTableTotals(productId, productData);
       });
-      
+
       tbody.appendChild(tr);
     });
 
@@ -2447,25 +2447,25 @@
     product._sumTotal = sumTotal;
     return tableWrapper;
   }
-  
+
   function updateAnalisisCheckboxes(productId, product) {
     const analisisSet = selectedAnalisis.get(productId) || new Set();
     // Buscar el card del producto usando el checkbox del producto
     const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
     if (!productCheckbox) return;
-    
+
     const card = productCheckbox.closest('.product-card');
     if (!card) return;
-    
+
     const tbody = card.querySelector('tbody');
     if (!tbody) return;
-    
+
     const checkboxes = tbody.querySelectorAll(`.analisis-checkbox[data-product-id="${productId}"]`);
     checkboxes.forEach((cb) => {
       const analisisIndex = parseInt(cb.getAttribute("data-analisis-index"));
       const isSelected = analisisSet.has(analisisIndex);
       cb.checked = isSelected;
-      
+
       // Actualizar estilo de la fila
       const row = cb.closest("tr");
       if (row) {
@@ -2499,7 +2499,7 @@
     const duracionAnalisis = $quoteDuracionAnalisis ? $quoteDuracionAnalisis.value.trim() : "";
     const nota = $quoteNota ? $quoteNota.value.trim() : "";
     const clientId = $quoteClientId ? $quoteClientId.value.trim() : "";
-    
+
     // Obtener contactos seleccionados
     let clientContactos = [];
     let contactoEmail = ""; // Correo del contacto seleccionado
@@ -2543,25 +2543,25 @@
 
     // Cargar logo (cache) y generar PDF
     if (!logoAsset) {
-      try { logoAsset = await loadLogo(); } catch {}
+      try { logoAsset = await loadLogo(); } catch { }
     }
     // Generar número de consecutivo (solo una vez)
     const quoteNumber = generateQuoteNumber();
-    
-    await generatePDF({ 
-        clientName, 
-        clientEmail: contactoEmail || clientEmail, // Usar correo del contacto si está disponible
-      clientNit, 
+
+    await generatePDF({
+      clientName,
+      clientEmail: contactoEmail || clientEmail, // Usar correo del contacto si está disponible
+      clientNit,
       clientContactos: clientContactos,
       clientCelular,
       clientFormaPago,
       duracionAnalisis,
       nota,
-      dateStr, 
+      dateStr,
       quoteNumber,
-      products: selectedProducts, 
-      totalGeneral, 
-      logo: logoAsset 
+      products: selectedProducts,
+      totalGeneral,
+      logo: logoAsset
     });
 
     // Guardar historial con el número de consecutivo
@@ -2596,27 +2596,27 @@
   function recomputeTotalsForProduct(product) {
     let sumCMtra = 0;
     let sumTotal = 0;
-    
+
     // Obtener el valor unitario seleccionado para este producto
     const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
-    
+
     // Obtener los análisis seleccionados (o todos si no hay selección)
     const analisisSet = selectedAnalisis.get(product.id);
     if (!analisisSet || analisisSet.size === 0) {
       // Si no hay análisis seleccionados, no incluir nada
       return { ...product, _sumCMtra: 0, _sumTotal: 0, _selectedUnit: selectedUnit };
     }
-    
+
     product.procesos.forEach((row, index) => {
       // Solo procesar si el análisis está seleccionado
       if (!analisisSet.has(index)) return;
-      
+
       const cMtraNum = parseNumStrict(row.cMtra_g ?? row.cMtra);
       const qty = parseNumStrict(row.cantidad);
       // Usar el valor unitario seleccionado
       const unit = parseNumStrict(row[selectedUnit]);
       if (isFinite(cMtraNum)) sumCMtra += cMtraNum;
-      
+
       // Solo calcular si el valor unitario seleccionado tiene un valor válido
       if (unit > 0 && qty > 0) {
         sumTotal += unit * qty;
@@ -2666,22 +2666,22 @@
     return clients.filter(client => {
       const nombre = (client.nombre || "").toLowerCase();
       const nit = (client.nit || "").toLowerCase();
-      const contactos = Array.isArray(client.contactos) 
+      const contactos = Array.isArray(client.contactos)
         ? client.contactos.join(" ").toLowerCase()
         : (client.contacto || "").toLowerCase();
       const correo = (client.correo || "").toLowerCase();
-      return nombre.includes(searchTerm) || 
-             nit.includes(searchTerm) || 
-             contactos.includes(searchTerm) || 
-             correo.includes(searchTerm);
+      return nombre.includes(searchTerm) ||
+        nit.includes(searchTerm) ||
+        contactos.includes(searchTerm) ||
+        correo.includes(searchTerm);
     });
   }
 
   function renderClientDropdown(clients) {
     if (!$clientDropdown) return;
-    
+
     $clientDropdown.innerHTML = "";
-    
+
     if (clients.length === 0) {
       $clientDropdown.style.display = "none";
       return;
@@ -2708,7 +2708,7 @@
 
   function selectClient(client) {
     if (!$clientName || !$quoteClientId) return;
-    
+
     // Llenar los campos con los datos del cliente
     $clientName.value = client.nombre || "";
     $quoteClientId.value = client.id || "";
@@ -2716,24 +2716,24 @@
     $quoteClientNit.value = client.nit || "";
     if ($quoteClientCelular) $quoteClientCelular.value = client.celular || "";
     if ($quoteClientFormaPago) $quoteClientFormaPago.value = client.formaPago || "";
-    
+
     // Buscar contactos del cliente en la pestaña Contactos
     const allContactos = getContactos();
     const clientNameNormalized = normalizeText(client.nombre || "");
     const clientNitNormalized = client.nit ? normalizeText(client.nit) : null;
-    
+
     // Filtrar contactos que pertenezcan a este cliente (por nombre o NIT)
     availableContactos = allContactos
       .filter(contacto => {
         const contactoClienteNormalized = normalizeText(contacto.nombreCliente || "");
         return contactoClienteNormalized === clientNameNormalized ||
-               (clientNitNormalized && contactoClienteNormalized === clientNitNormalized);
+          (clientNitNormalized && contactoClienteNormalized === clientNitNormalized);
       })
       .map(contacto => ({
         nombre: contacto.nombre || '',
         correo: contacto.correo || ''
       }));
-    
+
     // Limpiar el campo de contacto y los seleccionados
     if ($quoteClientContacto) {
       $quoteClientContacto.value = "";
@@ -2747,12 +2747,12 @@
     if ($contactoDropdown) {
       $contactoDropdown.style.display = "none";
     }
-    
+
     // Ocultar el dropdown
     if ($clientDropdown) {
       $clientDropdown.style.display = "none";
     }
-    
+
     // Validar el formulario
     if ($clientName.form) {
       $clientName.form.reportValidity();
@@ -2767,7 +2767,7 @@
     // Event listener para cuando se escribe en el campo
     $clientName.addEventListener("input", (e) => {
       const query = e.target.value.trim();
-      
+
       // Limpiar el timeout anterior
       if (searchTimeout) {
         clearTimeout(searchTimeout);
@@ -2818,7 +2818,7 @@
       searchTimeout = setTimeout(() => {
         const results = searchClients(query);
         renderClientDropdown(results);
-        
+
         // Si hay exactamente un resultado que coincide exactamente con el texto escrito,
         // podríamos auto-seleccionarlo, pero es mejor dejar que el usuario lo seleccione
       }, 150);
@@ -2859,26 +2859,26 @@
 
   function addContacto(contactoObj) {
     if (!contactoObj) return;
-    
+
     // Asegurar que contactoObj es un objeto
     const contacto = typeof contactoObj === 'object' ? contactoObj : { nombre: String(contactoObj || ''), correo: '' };
     if (!contacto.nombre || !contacto.nombre.trim()) return;
-    
+
     const selected = getSelectedContactos();
     // Verificar si ya está seleccionado (comparar por nombre)
     const alreadySelected = selected.some(c => normalizeText(c.nombre) === normalizeText(contacto.nombre));
     if (alreadySelected) {
       return; // Ya está seleccionado
     }
-    
+
     selected.push({ nombre: contacto.nombre.trim(), correo: contacto.correo ? contacto.correo.trim() : '' });
     updateSelectedContactos(selected);
-    
+
     // Actualizar el campo Email con el correo del contacto seleccionado
     if (contacto.correo && contacto.correo.trim() && $clientEmail) {
       $clientEmail.value = contacto.correo.trim();
     }
-    
+
     // Limpiar el input
     if ($quoteClientContacto) {
       $quoteClientContacto.value = "";
@@ -2899,10 +2899,10 @@
 
   function updateSelectedContactos(contactos) {
     if (!$quoteClientContactosSelected || !$selectedContactos) return;
-    
+
     // Guardar como JSON string
     $quoteClientContactosSelected.value = JSON.stringify(contactos);
-    
+
     // Renderizar los tags de contactos seleccionados
     $selectedContactos.innerHTML = "";
     contactos.forEach((contacto) => {
@@ -2922,13 +2922,13 @@
   function filterContactos(query) {
     const selected = getSelectedContactos();
     const selectedNombres = selected.map(c => normalizeText(c.nombre));
-    
+
     if (!query || !query.trim()) {
       return availableContactos.filter(contacto => {
         return !selectedNombres.includes(normalizeText(contacto.nombre));
       });
     }
-    
+
     const queryLower = query.toLowerCase().trim();
     return availableContactos.filter(contacto => {
       const nombreMatch = contacto.nombre.toLowerCase().includes(queryLower);
@@ -2939,9 +2939,9 @@
 
   function renderContactoDropdown(contactos) {
     if (!$contactoDropdown) return;
-    
+
     $contactoDropdown.innerHTML = "";
-    
+
     if (contactos.length === 0) {
       const item = document.createElement("div");
       item.className = "dropdown-item-text text-muted";
@@ -2950,7 +2950,7 @@
       $contactoDropdown.style.display = "block";
       return;
     }
-    
+
     contactos.forEach((contacto) => {
       const item = document.createElement("a");
       item.className = "dropdown-item";
@@ -2967,7 +2967,7 @@
       });
       $contactoDropdown.appendChild(item);
     });
-    
+
     $contactoDropdown.style.display = "block";
   }
 
@@ -2994,7 +2994,7 @@
     // Event listener para cuando se escribe en el campo
     $quoteClientContacto.addEventListener("input", (e) => {
       const query = e.target.value.trim();
-      
+
       // Limpiar el timeout anterior
       if (searchTimeout) {
         clearTimeout(searchTimeout);
@@ -3045,18 +3045,18 @@
   function clearCartSelection() {
     // Limpiar todas las selecciones de productos
     selectedProductIds.clear();
-    
+
     // Limpiar todas las selecciones de análisis
     selectedAnalisis.clear();
-    
+
     // No limpiar selectedUnitValues para mantener las selecciones del usuario
     // selectedUnitValues.clear();
-    
+
     // Actualizar todos los checkboxes de productos
     document.querySelectorAll(".product-select").forEach((cb) => {
       cb.checked = false;
     });
-    
+
     // Actualizar todos los checkboxes de análisis y sus filas
     document.querySelectorAll(".analisis-checkbox").forEach((cb) => {
       cb.checked = false;
@@ -3065,12 +3065,12 @@
         row.classList.add("table-secondary", "opacity-75");
       }
     });
-    
+
     // Recalcular y actualizar totales de todas las tablas
     productos.forEach((product) => {
       updateProductTableTotals(product.id, product);
     });
-    
+
     // Actualizar UI de selección
     updateSelectionStateUI();
   }
@@ -3112,18 +3112,18 @@
       // Si falla, intentar con fetch (solo funciona con http:// o https://)
       console.warn(`loadImageElement falló para ${src}, intentando con fetch...`);
     }
-    
+
     // Si loadImageElement falla, intentar con fetch (solo funciona con servidor HTTP)
     const isFileProtocol = window.location.protocol === 'file:';
     const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-    
+
     const candidates = [
       src,
       `./${src}`,
       `${basePath}${src}`,
       ...(isFileProtocol ? [] : [`/${src}`]) // Solo usar rutas absolutas si no es file://
     ];
-    
+
     for (const candidate of candidates) {
       try {
         const response = await fetch(candidate);
@@ -3141,7 +3141,7 @@
         continue;
       }
     }
-    
+
     console.error(`No se pudo cargar ${src} desde ninguna ruta`);
     return null;
   }
@@ -3151,38 +3151,38 @@
     if (!text || text.trim().length === 0) {
       return y;
     }
-    
+
     const lines = doc.splitTextToSize(text, maxWidth);
     const lineHeight = fontSize * 1.2;
     let currentY = y;
-    
+
     for (let index = 0; index < lines.length; index++) {
       const line = lines[index];
       const trimmedLine = line.trim();
-      
+
       // Verificar si necesitamos una nueva página antes de agregar esta línea
       if (pageHeight && currentY + lineHeight > pageHeight - bottomMargin) {
         doc.addPage();
         currentY = 50; // Posición inicial en la nueva página con margen superior
       }
-      
+
       // Última línea o línea vacía: alinear a la izquierda (no justificar)
       if (index === lines.length - 1 || trimmedLine.length === 0) {
         doc.text(trimmedLine || line, x, currentY);
         currentY += lineHeight;
         continue;
       }
-      
+
       // Calcular espacios necesarios para justificar
       const words = trimmedLine.split(/\s+/).filter(w => w.length > 0);
-      
+
       if (words.length <= 1) {
         // Una sola palabra: alinear a la izquierda
         doc.text(trimmedLine, x, currentY);
         currentY += lineHeight;
         continue;
       }
-      
+
       // Calcular ancho del texto sin espacios extra
       let textWidth = 0;
       for (let i = 0; i < words.length; i++) {
@@ -3191,17 +3191,17 @@
           textWidth += doc.getTextWidth(' ');
         }
       }
-      
+
       const totalSpaces = words.length - 1;
       const extraSpace = totalSpaces > 0 ? (maxWidth - textWidth) / totalSpaces : 0;
-      
+
       // Si el espacio extra es muy grande o negativo, simplemente alinear a la izquierda
       if (extraSpace < 0 || extraSpace > maxWidth / 2) {
         doc.text(trimmedLine, x, currentY);
         currentY += lineHeight;
         continue;
       }
-      
+
       // Justificar: distribuir el espacio extra entre palabras
       let currentX = x;
       for (let i = 0; i < words.length; i++) {
@@ -3211,17 +3211,17 @@
           currentX += doc.getTextWidth(' ') + extraSpace;
         }
       }
-      
+
       currentY += lineHeight;
     }
-    
+
     return currentY;
   }
 
   async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", nota = "", dateStr, quoteNumber, products, totalGeneral, logo }) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
-    
+
     // Función auxiliar para formatear dinero en PDF sin espacio (evita saltos de línea)
     const formatMoneyPDF = (n) => {
       const num = Number(n) || 0;
@@ -3229,7 +3229,7 @@
       // Formato: $1,234,567 (sin espacio para evitar saltos de línea en PDF)
       return "$" + num.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     };
-    
+
     // Colores de marca (alineados con la web)
     const brandPrimary = [68, 194, 196]; // #44c2c4
     const brandSecondary = [243, 192, 44]; // #f3c02c
@@ -3241,7 +3241,7 @@
     const right = 555; // ancho útil para alinear a la derecha
     const bottomMargin = 40; // margen inferior
     const topMargin = 50; // margen superior para nuevas páginas
-    
+
     // Función helper para verificar y crear nueva página si es necesario
     function checkPageBreak(y, requiredSpace = 20) {
       if (y + requiredSpace > pageHeight - bottomMargin) {
@@ -3266,7 +3266,7 @@
     } catch (e) {
       console.error("Error al cargar logoolg.png:", e);
     }
-    
+
     // Cargar y mostrar C1.png y C2.png en la parte superior derecha
     const certW = 70; // ancho para cada certificado
     const certH = 70; // alto para cada certificado (circular)
@@ -3276,7 +3276,7 @@
     const xC1 = pageWidth - totalCertWidth - marginRight; // Posición de C1 (desde la derecha)
     const xC2 = xC1 + certW + spacing; // Posición de C2 (al lado de C1)
     const yCert = yLogo + (logoH - certH) / 2; // Centrado verticalmente con el logo
-    
+
     // Cargar C1.png
     try {
       const c1DataUrl = await loadImageAsDataUrl("assets/images/C1.png");
@@ -3288,7 +3288,7 @@
     } catch (e) {
       console.error("Error al cargar C1.png:", e);
     }
-    
+
     // Cargar C2.png
     try {
       const c2DataUrl = await loadImageAsDataUrl("assets/images/C2.png");
@@ -3326,7 +3326,7 @@
     const tableMiddleColWidth = 150;
     const tableTotalWidth = tableLeftColWidth + tableMiddleColWidth + tableRightColWidth;
     const tableX = left;
-    
+
     // Número de cotización: ubicar el título en la mitad vertical entre logos y el cuadro del cliente
     {
       const bottomOfLogos = Math.max(yLogo + logoH, yCert + certH);
@@ -3342,68 +3342,68 @@
         doc.text(`No. ${quoteNumber}`, right, cotizacionY + 16, { align: "right" });
       }
     }
-    
+
     // Dibujar borde de la tabla
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     const tableHeight = tableRowHeight * 3;
     doc.rect(tableX, tableStartY, tableTotalWidth, tableHeight);
-    
+
     // Línea vertical que separa las columnas
     const verticalLineX = tableX + tableLeftColWidth + tableMiddleColWidth;
     doc.line(verticalLineX, tableStartY, verticalLineX, tableStartY + tableHeight);
-    
+
     // Líneas horizontales entre filas
     doc.line(tableX, tableStartY + tableRowHeight, tableX + tableLeftColWidth + tableMiddleColWidth, tableStartY + tableRowHeight);
     doc.line(tableX, tableStartY + tableRowHeight * 2, tableX + tableLeftColWidth + tableMiddleColWidth, tableStartY + tableRowHeight * 2);
-    
+
     // Líneas horizontales en la columna derecha (para Contacto, email, Celular)
     const rightColStartY = tableStartY;
     doc.line(verticalLineX, rightColStartY + tableRowHeight, tableX + tableTotalWidth, rightColStartY + tableRowHeight);
     doc.line(verticalLineX, rightColStartY + tableRowHeight * 2, tableX + tableTotalWidth, rightColStartY + tableRowHeight * 2);
-    
+
     // Texto de la tabla - Columna izquierda
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Cliente:", tableX + 4, tableStartY + 12);
     doc.text("Nit:", tableX + 4, tableStartY + tableRowHeight + 12);
     doc.text("Fecha:", tableX + 4, tableStartY + tableRowHeight * 2 + 12);
-    
+
     // Valores de la columna izquierda
     doc.setFont("helvetica", "normal");
     doc.text(clientName || "", tableX + tableLeftColWidth + 4, tableStartY + 12);
     doc.text(clientNit || "", tableX + tableLeftColWidth + 4, tableStartY + tableRowHeight + 12);
     doc.text(formatDateHuman(dateStr), tableX + tableLeftColWidth + 4, tableStartY + tableRowHeight * 2 + 12);
-    
+
     // Texto de la columna derecha (Contacto, Email, Celular)
     const rightColX = verticalLineX + 4;
     const contactoNombre = clientContactos && clientContactos.length > 0 ? clientContactos[0] : "";
     const labelWidth = 55; // Ancho para las etiquetas
     const valueX = rightColX + labelWidth; // Posición X para los valores
     const maxValueWidth = tableRightColWidth - labelWidth - 8; // Ancho máximo para los valores (restar padding)
-    
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Contacto:", rightColX, rightColStartY + 12);
     doc.text("Email:", rightColX, rightColStartY + tableRowHeight + 12);
     doc.text("Celular:", rightColX, rightColStartY + tableRowHeight * 2 + 12);
-    
+
     // Valores de la columna derecha (con ajuste de texto para que quepa)
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    
+
     // Contacto
     const contactoLines = doc.splitTextToSize(contactoNombre || "", maxValueWidth);
     doc.text(contactoLines[0] || "", valueX, rightColStartY + 12);
-    
+
     // Email
     const emailLines = doc.splitTextToSize(clientEmail || "", maxValueWidth);
     doc.text(emailLines[0] || "", valueX, rightColStartY + tableRowHeight + 12);
-    
+
     // Celular
     const celularLines = doc.splitTextToSize(clientCelular || "", maxValueWidth);
     doc.text(celularLines[0] || "", valueX, rightColStartY + tableRowHeight * 2 + 12);
-    
+
     // Ajustar la posición del separador después de la tabla
     const separatorY = tableStartY + tableHeight + 18;
 
@@ -3428,7 +3428,7 @@
 
       // Obtener el valor unitario seleccionado para este producto
       const selectedUnit = p._selectedUnit || 'vrUnitUSD';
-      
+
       // Mapear el nombre de la columna según el valor seleccionado
       const unitColumnNames = {
         'vrUnit1': 'Vr. Unitario 1',
@@ -3440,7 +3440,7 @@
 
       // Obtener los análisis seleccionados para este producto
       const analisisSet = selectedAnalisis.get(p.id);
-      
+
       // Filtrar solo los procesos seleccionados
       const procesosSeleccionados = p.procesos.filter((_, index) => {
         // Si no hay selección, incluir todos (comportamiento por defecto para compatibilidad)
@@ -3449,23 +3449,23 @@
         }
         return analisisSet.has(index);
       });
-      
+
       const tableData = procesosSeleccionados.map((row) => {
         // Calcular el valor total usando el valor unitario seleccionado
         const qty = parseNumStrict(row.cantidad);
         const unitValue = parseNumStrict(row[selectedUnit]);
         let finalTotal = 0;
-        
+
         // Calcular usando el valor unitario seleccionado
         // Solo si el valor unitario tiene un valor válido
         if (unitValue > 0 && qty > 0) {
           finalTotal = unitValue * qty;
         }
         // Si el valor unitario está vacío o es 0, el total será 0
-        
+
         // Formatear el valor unitario con formato de moneda para PDF
         const unitValueFormatted = unitValue > 0 ? formatMoneyPDF(unitValue) : "";
-        
+
         return [
           String(row.codigo ?? ""),
           String(row.analisis ?? ""),
@@ -3490,8 +3490,8 @@
           5: { halign: "right" },
           6: { halign: "right", cellWidth: 90 }
         },
-        didDrawPage: (data) => {},
-        willDrawCell: (data) => {}
+        didDrawPage: (data) => { },
+        willDrawCell: (data) => { }
       });
       y = doc.lastAutoTable.finalY + 16;
 
@@ -3517,9 +3517,9 @@
 
     // Nuevo contenido después del precio total
     y += 24;
-    
+
     const textWidth = pageWidth - 2 * left;
-    
+
     // CONDICIONES DEL SERVICIO
     y = checkPageBreak(y, 50);
     doc.setFont("helvetica", "bold");
@@ -3630,21 +3630,21 @@
     const user = getCurrentUser();
     const userName = user?.name || "";
     const userCargo = user?.cargo || "";
-    
+
     if (userName) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.text(userName.toUpperCase(), left, y);
       y += 12;
     }
-    
+
     if (userCargo) {
       doc.setFont("helvetica", "bold");
       doc.text(userCargo, left, y);
     }
 
     // Nombre del archivo incluyendo el número de consecutivo si está disponible
-    const filename = quoteNumber 
+    const filename = quoteNumber
       ? `Cotizacion_${quoteNumber}_${sanitizeFilename(clientName)}_${dateStr}.pdf`
       : `Cotizacion_${sanitizeFilename(clientName)}_${dateStr}.pdf`;
     doc.save(filename);
@@ -3756,7 +3756,7 @@
     });
 
     // Actualizar estadísticas al renderizar historial completo
-    try { renderStats(); } catch {}
+    try { renderStats(); } catch { }
   }
 
   async function exportHistoryToXlsx(filters) {
@@ -3770,7 +3770,7 @@
       showAlert("No hay registros para exportar.", "info");
       return;
     }
-    
+
     // Preparar datos como arrays (igual que clientes, contactos y usuarios)
     const historyRows = list.map((q, idx) => [
       q.quoteNumber || (idx + 1),
@@ -3786,9 +3786,9 @@
 
     // Intentar usar ExcelJS con estilos (igual que clientes, contactos y usuarios)
     const success = await applyHeaderStylesWithExcelJS(
-      historyRows, 
-      headers, 
-      filename, 
+      historyRows,
+      headers,
+      filename,
       "Historial",
       [12, 15, 30, 50, 15, 20]
     );
@@ -3802,7 +3802,7 @@
       headers,
       ...historyRows
     ]);
-    
+
     // Ajustar ancho de columnas
     ws['!cols'] = [
       { wch: 12 }, // Consecutivo
@@ -3812,7 +3812,7 @@
       { wch: 15 }, // Total COP
       { wch: 20 }  // Usuario
     ];
-    
+
     XLSX.utils.book_append_sheet(wb, ws, "Historial");
     XLSX.writeFile(wb, filename);
   }
@@ -3839,11 +3839,11 @@
     if ($noStatsEl) $noStatsEl.classList.toggle("d-none", hasData);
     $statsCanvas.classList.toggle("d-none", !hasData);
     if (!hasData) {
-      if (topProductsChart) { try { topProductsChart.destroy(); } catch {} topProductsChart = null; }
+      if (topProductsChart) { try { topProductsChart.destroy(); } catch { } topProductsChart = null; }
       return;
     }
     const ctx = $statsCanvas.getContext("2d");
-    if (topProductsChart) { try { topProductsChart.destroy(); } catch {} }
+    if (topProductsChart) { try { topProductsChart.destroy(); } catch { } }
     topProductsChart = new Chart(ctx, {
       type: "bar",
       data: {
@@ -3877,7 +3877,7 @@
       if (el && el.complete && el.naturalWidth > 0) {
         try { return { el, dataUrl: elementToDataUrl(el) }; } catch { return { el }; }
       }
-    } catch {}
+    } catch { }
     // 2) Probar una lista de rutas comunes para el logo
     const candidates = [
       "assets/images/logoolg.png",
@@ -3887,7 +3887,7 @@
       try {
         const img = await loadImageElement(src);
         try { return { el: img, dataUrl: elementToDataUrl(img) }; } catch { return { el: img }; }
-      } catch {}
+      } catch { }
     }
     return null;
   }
@@ -3897,7 +3897,7 @@
     if (logo.dataUrl) return logo.dataUrl;
     try {
       if (logo.el) return elementToDataUrl(logo.el);
-    } catch {}
+    } catch { }
     return null;
   }
 
@@ -3917,30 +3917,30 @@
     return new Promise((resolve, reject) => {
       // Para file://, no usar crossOrigin ya que causa problemas de CORS
       const isFileProtocol = window.location.protocol === 'file:';
-      
+
       // Obtener la ruta base del archivo HTML
       const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-      
+
       const candidates = [
         src,
         `./${src}`,
         `${basePath}${src}`,
         ...(isFileProtocol ? [] : [`/${src}`]) // Solo usar rutas absolutas si no es file://
       ];
-      
+
       let currentIndex = 0;
       const tryNext = () => {
         if (currentIndex >= candidates.length) {
           reject(new Error(`No se pudo cargar ${src} desde ninguna ruta`));
           return;
         }
-        
+
         const img = new Image();
         // Solo usar crossOrigin si no es file://
         if (!isFileProtocol) {
-          try { img.crossOrigin = "anonymous"; } catch {}
+          try { img.crossOrigin = "anonymous"; } catch { }
         }
-        
+
         img.onload = () => {
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             resolve(img);
@@ -3949,15 +3949,15 @@
             tryNext();
           }
         };
-        
+
         img.onerror = () => {
           currentIndex++;
           tryNext();
         };
-        
+
         img.src = candidates[currentIndex];
       };
-      
+
       tryNext();
     });
   }
@@ -3971,7 +3971,7 @@
         naturalW = Math.max(1, Number(logo.el.naturalWidth || logo.el.width || 64));
         naturalH = Math.max(1, Number(logo.el.naturalHeight || logo.el.height || 64));
       }
-    } catch {}
+    } catch { }
     const scale = Math.max(0.0001, Math.min(maxW / naturalW, maxH / naturalH));
     const w = Math.round(naturalW * scale);
     const h = Math.round(naturalH * scale);
@@ -3990,22 +3990,22 @@
         .map(recomputeTotalsForProduct);
       // Asegurar que el logo esté disponible también al abrir desde historial
       if (!logoAsset) {
-        try { logoAsset = await loadLogo(); } catch {}
+        try { logoAsset = await loadLogo(); } catch { }
       }
-      await generatePDF({ 
-        clientName: q.clientName, 
-        clientEmail: q.clientEmail || "", 
+      await generatePDF({
+        clientName: q.clientName,
+        clientEmail: q.clientEmail || "",
         clientNit: q.clientNit || "",
         clientContactos: q.clientContactos || (q.clientContacto ? [q.clientContacto] : []),
         clientCelular: q.clientCelular || "",
         clientFormaPago: q.clientFormaPago || "",
         duracionAnalisis: q.duracionAnalisis || "",
         nota: q.nota || "",
-        dateStr: q.date, 
+        dateStr: q.date,
         quoteNumber: q.quoteNumber || "",
-        products: selected, 
-        totalGeneral: (q.totalCOP != null ? q.totalCOP : q.totalUSD), 
-        logo: logoAsset 
+        products: selected,
+        totalGeneral: (q.totalCOP != null ? q.totalCOP : q.totalUSD),
+        logo: logoAsset
       });
     } else if (action === "delete") {
       showConfirm("¿Borrar esta cotización del historial?", "Borrar").then((ok) => {
@@ -4025,7 +4025,7 @@
     const iconEl = document.getElementById("alertModalIcon");
     const headerEl = document.getElementById("alertModalHeader");
     const acceptBtn = document.getElementById("alertModalAcceptBtn");
-    
+
     if (!modalEl || !textEl || typeof bootstrap === "undefined") {
       // Fallback seguro si no carga Bootstrap
       window.alert(message);
@@ -4087,13 +4087,13 @@
 
     // Establecer z-index antes de mostrar el modal para que aparezca encima de otros modales
     modalEl.style.zIndex = '1065';
-    
+
     // Mostrar modal
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
       backdrop: true,
       keyboard: true
     });
-    
+
     // Ajustar backdrop cuando el modal se muestra
     const onShown = () => {
       // Ajustar backdrop solo si hay múltiples modales abiertos
@@ -4107,16 +4107,16 @@
           backdrops[backdrops.length - 2].style.zIndex = '1050';
         }
       }
-      
+
       modalEl.removeEventListener('shown.bs.modal', onShown);
     };
-    
+
     const onHidden = () => {
       // Restaurar z-index por defecto
       modalEl.style.zIndex = '';
       modalEl.removeEventListener('hidden.bs.modal', onHidden);
     };
-    
+
     modalEl.addEventListener("shown.bs.modal", onShown, { once: true });
     modalEl.addEventListener("hidden.bs.modal", onHidden, { once: true });
     modal.show();
@@ -4136,17 +4136,17 @@
       const messageWithBreaks = (message || "¿Confirmar?").replace(/\n/g, '<br>');
       msgEl.innerHTML = messageWithBreaks;
       if (acceptLabel) acceptBtn.textContent = acceptLabel;
-      
+
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
         backdrop: true,
         keyboard: true
       });
-      
+
       // Cuando el modal se muestra, asegurar z-index mayor que otros modales
       const onShown = () => {
         // Forzar z-index mayor para el modal de confirmación
         modalEl.style.zIndex = '1065';
-        
+
         // Ajustar backdrop solo si hay múltiples modales abiertos
         // Esto solo debe afectar al backdrop del modal de confirmación
         const backdrops = document.querySelectorAll('.modal-backdrop');
@@ -4159,10 +4159,10 @@
             backdrops[backdrops.length - 2].style.zIndex = '1050';
           }
         }
-        
+
         modalEl.removeEventListener('shown.bs.modal', onShown);
       };
-      
+
       let resolved = false;
       const onAccept = () => {
         resolved = true;
@@ -4233,7 +4233,7 @@
   }
 
   function saveCatalog(list) {
-    try { localStorage.setItem("olgroup_catalog", JSON.stringify(list || [])); } catch {}
+    try { localStorage.setItem("olgroup_catalog", JSON.stringify(list || [])); } catch { }
   }
   function loadCatalog() {
     try { return JSON.parse(localStorage.getItem("olgroup_catalog") || "null"); } catch { return null; }
@@ -4248,10 +4248,10 @@
       return;
     }
     if (!$deleteProductsModal || !$deleteProductsList) return;
-    
+
     // Renderizar lista de productos con checkboxes
     $deleteProductsList.innerHTML = "";
-    
+
     if (productos.length === 0) {
       $deleteProductsList.innerHTML = '<div class="text-center text-muted py-3">No hay productos para eliminar.</div>';
       if ($btnConfirmDeleteProducts) $btnConfirmDeleteProducts.disabled = true;
@@ -4263,7 +4263,7 @@
         const nameB = (b.nombre || "").toLowerCase().trim();
         return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
       });
-      
+
       sortedProducts.forEach((product) => {
         const item = document.createElement("div");
         item.className = "list-group-item";
@@ -4277,7 +4277,7 @@
         `;
         $deleteProductsList.appendChild(item);
       });
-      
+
       if ($btnDeleteAllProducts) $btnDeleteAllProducts.disabled = false;
       updateDeleteProductsButtonState();
     }
@@ -4327,7 +4327,7 @@
       return;
     }
     if (!$deleteProductsList) return;
-    
+
     const checked = $deleteProductsList.querySelectorAll(".product-delete-checkbox:checked");
     if (checked.length === 0) {
       showAlert("Por favor selecciona al menos un producto para eliminar.", "warning");
@@ -4336,7 +4336,7 @@
 
     const idsToDelete = Array.from(checked).map((cb) => cb.value);
     const count = idsToDelete.length;
-    
+
     const confirmed = await showConfirm(`¿Estás seguro de que deseas eliminar ${count} producto(s)?\n\nEsta acción no se puede deshacer.`, "Eliminar");
     if (!confirmed) {
       return;
@@ -4344,7 +4344,7 @@
 
     // Eliminar productos seleccionados
     productos = productos.filter((p) => !idsToDelete.includes(p.id));
-    
+
     // Limpiar selecciones de productos eliminados
     idsToDelete.forEach((id) => {
       selectedProductIds.delete(id);
@@ -4353,17 +4353,17 @@
 
     // Guardar catálogo actualizado
     saveCatalog(productos);
-    
+
     // Actualizar UI
     updateSelectionStateUI();
     renderProductsByLetter(currentLetter);
-    
+
     // Cerrar modal
     if (typeof bootstrap !== "undefined" && $deleteProductsModal) {
       const modal = bootstrap.Modal.getOrCreateInstance($deleteProductsModal);
       modal.hide();
     }
-    
+
     showAlert(`${count} producto(s) eliminado(s) exitosamente.`, "success");
   }
 
@@ -4386,24 +4386,24 @@
 
     // Eliminar todos los productos
     productos = [];
-    
+
     // Limpiar todas las selecciones
     selectedProductIds.clear();
     selectedUnitValues.clear();
 
     // Guardar catálogo vacío
     saveCatalog(productos);
-    
+
     // Actualizar UI
     updateSelectionStateUI();
     renderProductsByLetter(currentLetter);
-    
+
     // Cerrar modal
     if (typeof bootstrap !== "undefined" && $deleteProductsModal) {
       const modal = bootstrap.Modal.getOrCreateInstance($deleteProductsModal);
       modal.hide();
     }
-    
+
     showAlert(`Todos los ${count} producto(s) han sido eliminados exitosamente.`, "success");
   }
 
@@ -4473,16 +4473,16 @@
       // Editar cliente existente
       updatedClients = clients.map((c) =>
         c.id === id
-          ? { 
-              ...c, 
-              nombre, 
-              nit, 
-              contactos: contactos.length > 0 ? contactos : (c.contactos || []), 
-              correo, 
-              celular,
-              formaPago,
-              updatedAt: new Date().toISOString() 
-            }
+          ? {
+            ...c,
+            nombre,
+            nit,
+            contactos: contactos.length > 0 ? contactos : (c.contactos || []),
+            correo,
+            celular,
+            formaPago,
+            updatedAt: new Date().toISOString()
+          }
           : c
       );
     } else {
@@ -4520,12 +4520,12 @@
 
   function openDeleteClientsModal() {
     if (!$deleteClientsModal || !$deleteClientsList) return;
-    
+
     const clients = getClients();
-    
+
     // Renderizar lista de clientes con checkboxes
     $deleteClientsList.innerHTML = "";
-    
+
     if (clients.length === 0) {
       $deleteClientsList.innerHTML = '<div class="text-center text-muted py-3">No hay clientes para eliminar.</div>';
       if ($btnConfirmDeleteClients) $btnConfirmDeleteClients.disabled = true;
@@ -4534,7 +4534,7 @@
         const item = document.createElement("div");
         item.className = "list-group-item";
         // Obtener contactos (puede ser array o string legacy)
-        const contactos = Array.isArray(client.contactos) 
+        const contactos = Array.isArray(client.contactos)
           ? client.contactos.map(c => typeof c === 'object' ? c.nombre : c).join(", ")
           : (client.contacto || "");
         item.innerHTML = `
@@ -4549,7 +4549,7 @@
         `;
         $deleteClientsList.appendChild(item);
       });
-      
+
       updateDeleteClientsButtonState();
     }
 
@@ -4591,7 +4591,7 @@
 
   async function deleteSelectedClients() {
     if (!$deleteClientsList) return;
-    
+
     const checked = $deleteClientsList.querySelectorAll(".client-delete-checkbox:checked");
     if (checked.length === 0) {
       showAlert("Por favor selecciona al menos un cliente para eliminar.", "warning");
@@ -4600,7 +4600,7 @@
 
     const idsToDelete = Array.from(checked).map((cb) => cb.value);
     const count = idsToDelete.length;
-    
+
     const confirmed = await showConfirm(`¿Estás seguro de que deseas eliminar ${count} cliente(s)?\n\nEsta acción no se puede deshacer.`, "Eliminar");
     if (!confirmed) {
       return;
@@ -4610,16 +4610,16 @@
     const clients = getClients();
     const remainingClients = clients.filter((c) => !idsToDelete.includes(c.id));
     saveClients(remainingClients);
-    
+
     // Actualizar UI
     renderClients();
-    
+
     // Cerrar modal
     if (typeof bootstrap !== "undefined" && $deleteClientsModal) {
       const modal = bootstrap.Modal.getOrCreateInstance($deleteClientsModal);
       modal.hide();
     }
-    
+
     showAlert(`${count} cliente(s) eliminado(s) exitosamente.`, "success");
   }
 
@@ -4634,7 +4634,7 @@
       $clientCorreo.value = client.correo || "";
       if ($clientCelular) $clientCelular.value = client.celular || "";
       if ($clientFormaPago) $clientFormaPago.value = client.formaPago || "";
-      
+
       // Cargar contactos
       if ($contactosContainer) {
         $contactosContainer.innerHTML = "";
@@ -4655,7 +4655,7 @@
       $clientCorreo.value = "";
       if ($clientCelular) $clientCelular.value = "";
       if ($clientFormaPago) $clientFormaPago.value = "";
-      
+
       // Limpiar contactos
       if ($contactosContainer) {
         $contactosContainer.innerHTML = "";
@@ -4672,7 +4672,7 @@
 
   function addContactoInput(value = "", isFirst = false) {
     if (!$contactosContainer) return;
-    
+
     const div = document.createElement("div");
     div.className = "input-group mb-2";
     div.innerHTML = `
@@ -4682,7 +4682,7 @@
       </button>
     `;
     $contactosContainer.appendChild(div);
-    
+
     // Agregar evento al botón de eliminar
     const removeBtn = div.querySelector(".btn-remove-contacto");
     if (removeBtn) {
@@ -4691,7 +4691,7 @@
         updateRemoveButtons();
       });
     }
-    
+
     updateRemoveButtons();
   }
 
@@ -4699,7 +4699,7 @@
     if (!$contactosContainer) return;
     const contactosInputs = $contactosContainer.querySelectorAll(".contacto-input");
     const removeButtons = $contactosContainer.querySelectorAll(".btn-remove-contacto");
-    
+
     contactosInputs.forEach((input, index) => {
       const removeBtn = input.closest(".input-group").querySelector(".btn-remove-contacto");
       if (removeBtn) {
@@ -4731,7 +4731,7 @@
     $noClients.classList.add("d-none");
 
     const isAdmin = currentUser && currentUser.role === "admin";
-    
+
     clients.forEach((client, idx) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -4772,7 +4772,7 @@
         const data = new Uint8Array(ev.target.result);
         const wb = XLSX.read(data, { type: "array" });
         const clients = buildClientsFromWorkbook(wb);
-        
+
         if (clients.length === 0) {
           showAlert("No se encontraron clientes válidos en el archivo Excel.", "warning");
           return;
@@ -4780,7 +4780,7 @@
 
         // Confirmar si se deben agregar o reemplazar
         const existingClients = getClients();
-        
+
         if (existingClients.length > 0) {
           const shouldAppend = await showConfirm(
             `Ya existen ${existingClients.length} cliente(s) registrados.\n\n` +
@@ -4828,18 +4828,18 @@
 
   function buildClientsFromWorkbook(wb) {
     const clients = [];
-    
+
     // Procesar solo la hoja CLIENTES (ignorar CLIENTES_CONTACTOS)
-    const clientesSheetName = wb.SheetNames.find(name => 
-      normalizeText(name) === "clientes" || 
+    const clientesSheetName = wb.SheetNames.find(name =>
+      normalizeText(name) === "clientes" ||
       !normalizeText(name).includes("contacto")
     ) || wb.SheetNames[0]; // Si no encuentra, usar la primera hoja
-    
+
     const clientesSheet = wb.Sheets[clientesSheetName];
     if (!clientesSheet) {
       return clients;
     }
-    
+
     // Leer como JSON con encabezados
     const rows = XLSX.utils.sheet_to_json(clientesSheet, { header: 1, raw: false, defval: "" });
     if (!rows || rows.length === 0) return clients;
@@ -4908,7 +4908,7 @@
         updatedAt: new Date().toISOString()
       });
     }
-    
+
     return clients;
   }
 
@@ -4956,7 +4956,7 @@
       link.download = filename;
       link.click();
       window.URL.revokeObjectURL(url);
-      
+
       return true;
     } catch (e) {
       console.warn("Error al usar ExcelJS:", e);
@@ -4990,9 +4990,9 @@
 
     // Intentar usar ExcelJS con estilos
     const success = await applyHeaderStylesWithExcelJS(
-      clientesRows, 
-      headers, 
-      filename, 
+      clientesRows,
+      headers,
+      filename,
       "CLIENTES",
       [25, 15, 30, 15, 15]
     );
@@ -5006,7 +5006,7 @@
       headers,
       ...clientesRows
     ]);
-    
+
     // Ajustar ancho de columnas para CLIENTES
     wsClientes['!cols'] = [
       { wch: 25 }, // Nombre
@@ -5015,7 +5015,7 @@
       { wch: 15 }, // Celular
       { wch: 15 }  // Forma de Pago
     ];
-    
+
     XLSX.utils.book_append_sheet(wb, wsClientes, "CLIENTES");
     XLSX.writeFile(wb, filename);
   }
@@ -5128,13 +5128,13 @@
       // Editar contacto existente
       updatedContactos = contactos.map((c) =>
         c.id === id
-          ? { 
-              ...c, 
-              nombreCliente, 
-              nombre, 
-              correo,
-              updatedAt: new Date().toISOString()
-            }
+          ? {
+            ...c,
+            nombreCliente,
+            nombre,
+            correo,
+            updatedAt: new Date().toISOString()
+          }
           : c
       );
     } else {
@@ -5184,7 +5184,7 @@
         const data = new Uint8Array(event.target.result);
         const wb = XLSX.read(data, { type: "array" });
         const contactos = buildContactosFromWorkbook(wb);
-        
+
         if (contactos.length === 0) {
           showAlert("No se encontraron contactos válidos en el archivo.", "warning");
           return;
@@ -5193,7 +5193,7 @@
         const existingContactos = getContactos();
         const nuevos = contactos.filter((c) => {
           // Verificar si ya existe un contacto con el mismo nombre de cliente y nombre de contacto
-          return !existingContactos.some((ec) => 
+          return !existingContactos.some((ec) =>
             normalizeText(ec.nombreCliente) === normalizeText(c.nombreCliente) &&
             normalizeText(ec.nombre) === normalizeText(c.nombre)
           );
@@ -5217,20 +5217,20 @@
 
   function buildContactosFromWorkbook(wb) {
     const contactos = [];
-    
+
     // Buscar hoja de contactos
     const contactosSheetName = wb.SheetNames.find(name => {
       const normalized = normalizeText(name);
-      return normalized.includes("contacto") || 
-             normalized === "clientes_contactos" ||
-             normalized === "clientescontactos";
+      return normalized.includes("contacto") ||
+        normalized === "clientes_contactos" ||
+        normalized === "clientescontactos";
     }) || wb.SheetNames[0];
-    
+
     const contactosSheet = wb.Sheets[contactosSheetName];
     if (!contactosSheet) {
       return contactos;
     }
-    
+
     // Leer como JSON con encabezados
     const rows = XLSX.utils.sheet_to_json(contactosSheet, { header: 1, raw: false, defval: "" });
     if (!rows || rows.length === 0) return contactos;
@@ -5243,15 +5243,15 @@
 
     for (let i = 0; i < Math.min(10, rows.length); i++) {
       const row = ensureArray(rows[i]).map((c) => normalizeText(String(c || "")));
-      const nombreClientePos = row.findIndex((c) => 
-        (c.includes("nombre") && !c.includes("contacto")) || 
+      const nombreClientePos = row.findIndex((c) =>
+        (c.includes("nombre") && !c.includes("contacto")) ||
         c.includes("cliente")
       );
-      const nombreContactoPos = row.findIndex((c) => 
+      const nombreContactoPos = row.findIndex((c) =>
         c.includes("nombre") && c.includes("contacto")
       );
-      const correoContactoPos = row.findIndex((c) => 
-        (c.includes("correo") || c.includes("email") || c.includes("mail")) && 
+      const correoContactoPos = row.findIndex((c) =>
+        (c.includes("correo") || c.includes("email") || c.includes("mail")) &&
         c.includes("contacto")
       );
 
@@ -5281,7 +5281,7 @@
       const row = ensureArray(rows[i]);
       const nombreCliente = String(row[nombreClienteIdx] || "").trim();
       const nombreContacto = String(row[nombreContactoIdx] || "").trim();
-      
+
       if (!nombreCliente || !nombreContacto) continue; // Saltar filas sin datos requeridos
 
       const correoContacto = correoContactoIdx >= 0 ? String(row[correoContactoIdx] || "").trim() : "";
@@ -5295,7 +5295,7 @@
         updatedAt: new Date().toISOString()
       });
     }
-    
+
     return contactos;
   }
 
@@ -5323,9 +5323,9 @@
 
     // Intentar usar ExcelJS con estilos
     const success = await applyHeaderStylesWithExcelJS(
-      contactosRows, 
-      headers, 
-      filename, 
+      contactosRows,
+      headers,
+      filename,
       "CONTACTOS",
       [25, 25, 30]
     );
@@ -5339,14 +5339,14 @@
       headers,
       ...contactosRows
     ]);
-    
+
     // Ajustar ancho de columnas
     wsContactos['!cols'] = [
       { wch: 25 }, // Nombre (cliente)
       { wch: 25 }, // Nombre contacto
       { wch: 30 }  // Correo contacto
     ];
-    
+
     XLSX.utils.book_append_sheet(wb, wsContactos, "CONTACTOS");
     XLSX.writeFile(wb, filename);
   }
@@ -5426,7 +5426,7 @@
 
     const idsToDelete = Array.from(checked).map((cb) => cb.value);
     const count = idsToDelete.length;
-    
+
     const confirmed = await showConfirm(`¿Estás seguro de que deseas eliminar ${count} contacto(s)?\n\nEsta acción no se puede deshacer.`, "Eliminar");
     if (!confirmed) {
       return;
@@ -5473,9 +5473,9 @@
 
     // Intentar usar ExcelJS con estilos
     const success = await applyHeaderStylesWithExcelJS(
-      usersRows, 
-      headers, 
-      filename, 
+      usersRows,
+      headers,
+      filename,
       "Usuarios",
       [20, 30, 30, 35, 15, 12]
     );
@@ -5489,7 +5489,7 @@
       headers,
       ...usersRows
     ]);
-    
+
     // Ajustar ancho de columnas
     ws['!cols'] = [
       { wch: 20 }, // Usuario
@@ -5499,7 +5499,7 @@
       { wch: 15 }, // Rol
       { wch: 12 }  // Estado
     ];
-    
+
     XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
     XLSX.writeFile(wb, filename);
   }
@@ -5551,13 +5551,13 @@
       btn.addEventListener("click", () => {
         // No ejecutar si el botón está deshabilitado
         if (btn.disabled) return;
-        
+
         const action = btn.dataset.action;
         const id = btn.dataset.id;
         const user = users.find((u) => u.id === id);
-        
+
         if (!user) return;
-        
+
         if (action === "edit") {
           openUserModal(user);
         } else if (action === "delete" && user.id !== currentUser.id) {
@@ -5581,7 +5581,7 @@
       if ($userPasswordConfirm) $userPasswordConfirm.value = "";
       $userRole.value = user.role || "";
       $userActive.checked = user.active !== false;
-      
+
       // Ocultar requerimiento de contraseña al editar
       if ($passwordRequired) $passwordRequired.classList.add("d-none");
       if ($passwordHint) $passwordHint.classList.remove("d-none");
@@ -5600,7 +5600,7 @@
       if ($userPasswordConfirm) $userPasswordConfirm.value = "";
       $userRole.value = "";
       $userActive.checked = true;
-      
+
       // Mostrar requerimiento de contraseña al crear
       if ($passwordRequired) $passwordRequired.classList.remove("d-none");
       if ($passwordHint) $passwordHint.classList.remove("d-none");
@@ -5723,16 +5723,16 @@
       updatedUsers = users.map((u) =>
         u.id === id
           ? {
-              ...u,
-              username,
-              email,
-              name,
-              cargo,
-              role,
-              active,
-              password: password ? hashPassword(password) : u.password,
-              updatedAt: new Date().toISOString()
-            }
+            ...u,
+            username,
+            email,
+            name,
+            cargo,
+            role,
+            active,
+            password: password ? hashPassword(password) : u.password,
+            updatedAt: new Date().toISOString()
+          }
           : u
       );
     } else {
@@ -5769,7 +5769,7 @@
     }
 
     saveUsers(updatedUsers);
-    
+
     // Si se editó el usuario actual, actualizar la sesión y el navbar
     if (isCurrentUser) {
       const updatedUser = updatedUsers.find((u) => u.id === id);
@@ -5779,7 +5779,7 @@
         updateUserInfoInNavbar();
       }
     }
-    
+
     renderUsers();
     closeUserModal();
   }
@@ -5798,57 +5798,57 @@
 
   function openSelectProductModal() {
     if (!$selectProductModal || !$selectProductList || typeof bootstrap === "undefined") return;
-    
+
     // Validar que el usuario sea administrador
     if (!currentUser || currentUser.role !== "admin") {
       showAlert("Solo los administradores pueden editar productos.", "error", "Acceso denegado");
       return;
     }
-    
+
     if (productos.length === 0) {
       showAlert("No hay productos para editar.", "warning");
       return;
     }
-    
+
     // Limpiar buscador
     if ($selectProductSearch) {
       $selectProductSearch.value = "";
     }
-    
+
     // Renderizar lista de productos ordenados alfabéticamente
     renderSelectProductList();
-    
+
     const modal = bootstrap.Modal.getOrCreateInstance($selectProductModal);
     modal.show();
   }
 
   function renderSelectProductList() {
     if (!$selectProductList) return;
-    
+
     $selectProductList.innerHTML = "";
-    
+
     const searchTerm = $selectProductSearch ? $selectProductSearch.value.toLowerCase().trim() : "";
-    
+
     // Filtrar y ordenar productos
     let filteredProducts = productos;
     if (searchTerm) {
-      filteredProducts = productos.filter(p => 
+      filteredProducts = productos.filter(p =>
         (p.nombre || "").toLowerCase().includes(searchTerm)
       );
     }
-    
+
     // Ordenar alfabéticamente
     const sortedProducts = [...filteredProducts].sort((a, b) => {
       const nameA = (a.nombre || "").toLowerCase().trim();
       const nameB = (b.nombre || "").toLowerCase().trim();
       return nameA.localeCompare(nameB, 'es', { sensitivity: 'base' });
     });
-    
+
     if (sortedProducts.length === 0) {
       $selectProductList.innerHTML = '<div class="text-center text-muted py-3">No se encontraron productos.</div>';
       return;
     }
-    
+
     sortedProducts.forEach((product) => {
       const item = document.createElement("a");
       item.href = "#";
@@ -5875,22 +5875,22 @@
 
   function openProductModalForEdit(product) {
     if (!$productModal || typeof bootstrap === "undefined") return;
-    
+
     // Validar que el usuario sea administrador
     if (!currentUser || currentUser.role !== "admin") {
       showAlert("Solo los administradores pueden editar productos.", "error", "Acceso denegado");
       return;
     }
-    
+
     const modal = bootstrap.Modal.getOrCreateInstance($productModal);
-    
+
     $productModalTitle.textContent = "Editar Producto";
     $productId.value = product.id;
     $productNombre.value = product.nombre;
-    
+
     // Limpiar procesos existentes
     $procesosContainer.innerHTML = "";
-    
+
     // Agregar procesos existentes
     if (product.procesos && product.procesos.length > 0) {
       product.procesos.forEach((proceso, index) => {
@@ -5900,7 +5900,7 @@
       // Si no hay procesos, agregar uno vacío
       addProcesoRow();
     }
-    
+
     modal.show();
   }
 
@@ -5913,19 +5913,19 @@
       console.error("Bootstrap no está definido");
       return;
     }
-    
+
     // Validar que el usuario sea administrador
     if (!currentUser || currentUser.role !== "admin") {
       showAlert("Solo los administradores pueden crear o editar productos.", "error", "Acceso denegado");
       return;
     }
-    
+
     if (isEdit) {
       // Modo edición: abrir modal de selección
       openSelectProductModal();
       return;
     }
-    
+
     // Modo creación
     try {
       const modal = bootstrap.Modal.getOrCreateInstance($productModal);
@@ -5935,7 +5935,7 @@
       if ($procesosContainer) $procesosContainer.innerHTML = "";
       // Agregar una fila vacía inicial
       addProcesoRow();
-      
+
       modal.show();
     } catch (error) {
       console.error("Error al abrir el modal de producto:", error);
@@ -5947,11 +5947,11 @@
     // Remover todo excepto números
     const numStr = String(value || '').replace(/[^0-9]/g, '');
     if (!numStr) return '';
-    
+
     // Convertir a número y formatear
     const num = parseInt(numStr, 10);
     if (isNaN(num) || num === 0) return '';
-    
+
     // Formatear con comas
     return '$' + num.toLocaleString('es-CO');
   }
@@ -5964,16 +5964,16 @@
 
   function addProcesoRow(procesoData = null, index = null) {
     if (!$procesosContainer) return;
-    
+
     const rowIndex = index !== null ? index : $procesosContainer.children.length;
     const tr = document.createElement("tr");
-    
+
     // Formatear valores de precio si existen
     const vrUnit1Formatted = procesoData?.vrUnit1 ? formatCurrencyInput(procesoData.vrUnit1) : '';
     const vrUnit2Formatted = procesoData?.vrUnit2 ? formatCurrencyInput(procesoData.vrUnit2) : '';
     const vrUnit3Formatted = procesoData?.vrUnit3 ? formatCurrencyInput(procesoData.vrUnit3) : '';
     const vrUnitUSDFormatted = procesoData?.vrUnitUSD ? formatCurrencyInput(procesoData.vrUnitUSD) : '';
-    
+
     tr.innerHTML = `
       <td class="text-center align-middle" style="width: 40px;">${rowIndex + 1}</td>
       <td><input type="text" class="form-control form-control-sm proceso-codigo" value="${escapeHtml(procesoData?.codigo || '')}" placeholder="Ej: AEU-001"></td>
@@ -5991,7 +5991,7 @@
         </button>
       </td>
     `;
-    
+
     // Agregar event listeners para formatear campos de precio
     const priceInputs = [
       tr.querySelector(".proceso-vrunit1"),
@@ -5999,7 +5999,7 @@
       tr.querySelector(".proceso-vrunit3"),
       tr.querySelector(".proceso-vrunitusd")
     ];
-    
+
     priceInputs.forEach(input => {
       if (input) {
         // Al hacer foco, limpiar el formato para facilitar la edición
@@ -6011,7 +6011,7 @@
             e.target.value = numOnly;
           }
         });
-        
+
         // Formatear al perder el foco
         input.addEventListener("blur", (e) => {
           const value = e.target.value;
@@ -6020,7 +6020,7 @@
             e.target.value = formatted;
           }
         });
-        
+
         // Permitir solo números mientras se escribe
         input.addEventListener("input", (e) => {
           const value = e.target.value;
@@ -6035,14 +6035,14 @@
         });
       }
     });
-    
+
     // Agregar event listener al botón eliminar
     const removeBtn = tr.querySelector(".btn-remove-proceso");
     removeBtn.addEventListener("click", () => {
       tr.remove();
       updateProcesoRowNumbers();
     });
-    
+
     $procesosContainer.appendChild(tr);
   }
 
@@ -6072,7 +6072,7 @@
     // Recopilar procesos
     const procesos = [];
     const rows = $procesosContainer.querySelectorAll("tr");
-    
+
     if (rows.length === 0) {
       showAlert("Debes agregar al menos un análisis al producto.", "warning");
       return;
@@ -6132,10 +6132,10 @@
       updatedProducts = productos.map((p) =>
         p.id === productId
           ? {
-              ...p,
-              nombre,
-              procesos
-            }
+            ...p,
+            nombre,
+            procesos
+          }
           : p
       );
     } else {
@@ -6167,16 +6167,16 @@
     // Guardar productos
     productos = updatedProducts;
     saveCatalog(productos);
-    
+
     // Limpiar selección si se editó
     if (productId) {
       selectedProductIds.delete(productId);
       updateSelectionStateUI();
     }
-    
+
     // Recargar productos
     renderProductsByLetter(currentLetter);
-    
+
     // Actualizar el modal de eliminar productos si está abierto
     if ($deleteProductsModal && typeof bootstrap !== "undefined") {
       const deleteModal = bootstrap.Modal.getInstance($deleteProductsModal);
@@ -6185,7 +6185,7 @@
         openDeleteProductsModal();
       }
     }
-    
+
     closeProductModal();
     showAlert(productId ? "Producto actualizado correctamente." : "Producto creado correctamente.", "success");
   }
@@ -6230,7 +6230,7 @@
   // Manejar accesibilidad de modales - prevenir foco en modales ocultos
   function setupModalAccessibility() {
     // Escuchar cuando cualquier modal comienza a ocultarse
-    document.addEventListener('hide.bs.modal', function(event) {
+    document.addEventListener('hide.bs.modal', function (event) {
       const modal = event.target;
       // Remover foco de cualquier elemento dentro del modal antes de que se oculte
       const focusedElement = modal.querySelector(':focus');
@@ -6240,7 +6240,7 @@
     });
 
     // Escuchar cuando cualquier modal se oculta completamente
-    document.addEventListener('hidden.bs.modal', function(event) {
+    document.addEventListener('hidden.bs.modal', function (event) {
       const modal = event.target;
       // Remover foco de cualquier elemento dentro del modal
       const focusedElement = modal.querySelector(':focus');
@@ -6264,7 +6264,7 @@
     });
 
     // Escuchar cuando cualquier modal se muestra
-    document.addEventListener('shown.bs.modal', function(event) {
+    document.addEventListener('shown.bs.modal', function (event) {
       const modal = event.target;
       // Remover aria-hidden cuando el modal está visible
       modal.removeAttribute('aria-hidden');
@@ -6281,7 +6281,7 @@
     });
 
     // Prevenir foco en elementos dentro de modales ocultos
-    document.addEventListener('focusin', function(event) {
+    document.addEventListener('focusin', function (event) {
       const target = event.target;
       const modal = target.closest('.modal');
       if (modal && !modal.classList.contains('show')) {
@@ -6301,14 +6301,14 @@
   setupModalAccessibility();
 
   // Funciones de depuración para verificar el estado del localStorage
-  window.debugUsers = function() {
+  window.debugUsers = function () {
     console.log("=== DIAGNÓSTICO DE USUARIOS ===");
     console.log("1. Usuarios en localStorage:", getUsers());
     console.log("2. Datos raw en localStorage:", localStorage.getItem("olgroup_users"));
     console.log("3. Usuario actual en sessionStorage:", getCurrentUser());
     console.log("4. Estado de localStorage:", {
       disponible: typeof Storage !== "undefined",
-      espacioDisponible: (function() {
+      espacioDisponible: (function () {
         try {
           localStorage.setItem("test", "test");
           localStorage.removeItem("test");
@@ -6325,7 +6325,7 @@
     };
   };
 
-  window.backupUsers = function() {
+  window.backupUsers = function () {
     try {
       const users = getUsers();
       const backup = {
@@ -6354,13 +6354,13 @@
     }
   };
 
-  window.restoreUsers = function(usersData) {
+  window.restoreUsers = function (usersData) {
     if (!usersData || !Array.isArray(usersData)) {
       console.error("Error: usersData debe ser un array");
       alert("Error: Los datos deben ser un array de usuarios.");
       return false;
     }
-    
+
     if (confirm(`¿Estás seguro de que deseas restaurar ${usersData.length} usuarios? Esto reemplazará todos los usuarios actuales.`)) {
       if (saveUsers(usersData)) {
         alert("Usuarios restaurados correctamente. Recarga la página.");
