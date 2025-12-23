@@ -107,8 +107,12 @@
   const $quoteClientCelular = document.getElementById("quoteClientCelular");
   const $quoteClientFormaPago = document.getElementById("quoteClientFormaPago");
   const $quoteDuracionAnalisis = document.getElementById("quoteDuracionAnalisis");
-  const $quoteNota = document.getElementById("quoteNota");
+  const $quoteDiscount = document.getElementById("quoteDiscount");
+  const $quoteDiscountPercent = document.getElementById("quoteDiscountPercent");
   const $clientDropdown = document.getElementById("clientDropdown");
+
+  // Nota estándar que se mostrará después de cada tabla de producto en el PDF
+  const PRODUCTO_NOTA_ESTANDAR = "";
 
   // Variable para almacenar los contactos disponibles del cliente seleccionado
   let availableContactos = [];
@@ -125,6 +129,7 @@
   const $btnExportXlsx = document.getElementById("btnExportXlsx");
   const $btnLoadExcel = document.getElementById("btnLoadExcel");
   const $excelInput = document.getElementById("excelInput");
+  const $btnExportProducts = document.getElementById("btnExportProducts");
   const $btnDeleteProducts = document.getElementById("btnDeleteProducts");
   const $productSearch = document.getElementById("productSearch");
   const $scrollTopBtn = document.getElementById("scrollTopBtn");
@@ -149,6 +154,7 @@
   const $productModalTitle = document.getElementById("productModalTitle");
   const $productId = document.getElementById("productId");
   const $productNombre = document.getElementById("productNombre");
+  const $productNota = document.getElementById("productNota");
   const $procesosContainer = document.getElementById("procesosContainer");
   const $btnAddProceso = document.getElementById("btnAddProceso");
   const $btnSaveProduct = document.getElementById("btnSaveProduct");
@@ -1256,8 +1262,45 @@
             const today = new Date();
             $quoteDate.valueAsDate = today;
           }
+
           modal.show();
         }
+      });
+    }
+
+    // Event listener para formatear el campo de descuento
+    if ($quoteDiscount) {
+      $quoteDiscount.addEventListener("input", (e) => {
+        const value = e.target.value;
+        const numOnly = value.replace(/[^0-9]/g, '');
+        if (value !== numOnly) {
+          // Si el usuario borra todo, dejarlo vacío
+          if (!numOnly) {
+            e.target.value = "";
+            return;
+          }
+        }
+        // Usar formatCurrencyInput que añade el signo $ y comas
+        // Se asume que formatCurrencyInput está disponible (hoisted)
+        if (numOnly) {
+          e.target.value = formatCurrencyInput(numOnly);
+        }
+      });
+
+      // Manejar el caso de que el usuario borre con backspace y limpiar formato
+      $quoteDiscount.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" || e.key === "Delete") {
+          // Permitir comportamiento por defecto
+        }
+      });
+    }
+
+    // Event listener para validar el campo de descuento porcentaje
+    if ($quoteDiscountPercent) {
+      $quoteDiscountPercent.addEventListener("input", (e) => {
+        let value = parseFloat(e.target.value);
+        if (value < 0) e.target.value = 0;
+        if (value > 100) e.target.value = 100;
       });
     }
 
@@ -1268,6 +1311,9 @@
     if ($btnLoadExcel && $excelInput) {
       $btnLoadExcel.addEventListener("click", () => $excelInput.click());
       $excelInput.addEventListener("change", onExcelSelected);
+    }
+    if ($btnExportProducts) {
+      $btnExportProducts.addEventListener("click", exportProductsToExcel);
     }
 
     // Event listeners para productos - crear/editar
@@ -1314,6 +1360,7 @@
         if ($productId) $productId.value = "";
         if ($procesosContainer) $procesosContainer.innerHTML = "";
         if ($productModalTitle) $productModalTitle.textContent = "Nuevo Producto";
+        if ($productNota) $productNota.value = "";
       });
     }
 
@@ -1351,7 +1398,9 @@
 
     // Sidebar toggle
     function toggleSidebar(e) {
-      e.preventDefault();
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       e.stopPropagation();
       if ($sidebar) {
         const isActive = $sidebar.classList.contains("active");
@@ -1430,12 +1479,16 @@
 
       // Crear nuevos handlers y guardar referencias
       sidebarToggleHandler = function (e) {
-        e.preventDefault();
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         e.stopPropagation();
         toggleSidebar(e);
       };
       sidebarToggleTouchHandler = function (e) {
-        e.preventDefault();
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         e.stopPropagation();
         toggleSidebar(e);
       };
@@ -1628,7 +1681,7 @@
             analisis: String(get(colIndex.analisis) || "").trim(),
             metodo: String(get(colIndex.metodo) || "").trim(),
             cMtra: String(get(colIndex.cmtra_g) || "").trim(),
-            cantidad: String(get(colIndex.cantidad) || "").trim(),
+            cantidad: (String(get(colIndex.cantidad) || "").trim()) || "1",
             vrUnit1: String(get(colIndex.vrunit1) || "").trim(),
             vrUnit2: String(get(colIndex.vrunit2) || "").trim(),
             vrUnit3: String(get(colIndex.vrunit3) || "").trim(),
@@ -2123,6 +2176,19 @@
     body.className = "card-body p-0";
     body.appendChild(renderProductTable(product));
 
+    // Nota del producto visible debajo de la tabla en el módulo Productos y procesos
+    const notaProducto = product.nota && String(product.nota).trim();
+    if (notaProducto) {
+      const noteDiv = document.createElement("div");
+      // Mismas características visuales que en el PDF: título en negrilla negro, texto en cursiva negro
+      noteDiv.className = "px-3 pb-3 pt-2 small border-top";
+      noteDiv.innerHTML = `
+        <div class="fw-semibold mb-1">Condiciones del servicio:</div>
+        <div class="fst-italic">${notaProducto.replace(/\n/g, "<br>")}</div>
+      `;
+      body.appendChild(noteDiv);
+    }
+
     card.appendChild(header);
     card.appendChild(body);
     col.appendChild(card);
@@ -2279,14 +2345,14 @@
         <th style="width: 40px;"></th>
         <th>Código</th>
         <th>Análisis</th>
-        <th>Método</th>
-        <th>C. Mtra. [g]</th>
-        <th>Cant.</th>
-        <th>Vr. Unitario 1</th>
-        <th>Vr. Unitario 2</th>
-        <th>Vr. Unitario 3</th>
-        <th>Vr. Unitario USD</th>
-        <th>Vr. Total</th>
+        <th class="text-center">Método</th>
+        <th class="text-center">C. Mtra. [g]</th>
+        <th class="text-center">Cant.</th>
+        <th class="text-center">Vr. Unitario 1</th>
+        <th class="text-center">Vr. Unitario 2</th>
+        <th class="text-center">Vr. Unitario 3</th>
+        <th class="text-center">Vr. Unitario USD</th>
+        <th class="text-center">Vr. Total</th>
       </tr>
     `;
 
@@ -2362,9 +2428,18 @@
         </td>
         <td>${getText(row.codigo)}</td>
         <td>${getText(row.analisis)}</td>
-        <td>${getText(row.metodo)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.cMtra, row.cMtra_g)}</td>
-        <td class=\"text-center\">${valueOrFormat(row.cantidad, row.cantidad)}</td>
+        <td class="text-center">${getText(row.metodo)}</td>
+        <td class="text-center">${valueOrFormat(row.cMtra, row.cMtra_g)}</td>
+        <td class="text-center">
+          <input type="number" 
+                 class="form-control form-control-sm text-center editable-cantidad" 
+                 data-product-id="${product.id}" 
+                 data-analisis-index="${index}"
+                 value="${parseNumStrict(row.cantidad) || '1'}" 
+                 min="0" 
+                 step="1"
+                 style="width: 70px; display: inline-block; padding: 0.25rem 0.5rem;">
+        </td>
         <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit1 != null && row.vrUnit1 !== "" ? formatMoney(parseNumStrict(row.vrUnit1)) : ""}</td>
         <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit2 != null && row.vrUnit2 !== "" ? formatMoney(parseNumStrict(row.vrUnit2)) : ""}</td>
         <td class=\"text-center\" style=\"white-space: nowrap;\">${row.vrUnit3 != null && row.vrUnit3 !== "" ? formatMoney(parseNumStrict(row.vrUnit3)) : ""}</td>
@@ -2418,6 +2493,26 @@
         // Recalcular totales y actualizar la tabla
         updateProductTableTotals(productId, productData);
       });
+
+      // Agregar event listeners para campos editables
+      const cantidadInput = tr.querySelector('.editable-cantidad');
+
+      if (cantidadInput) {
+        cantidadInput.addEventListener('input', (e) => {
+          const productId = e.target.getAttribute('data-product-id');
+          const analisisIndex = parseInt(e.target.getAttribute('data-analisis-index'));
+          const newValue = parseInt(e.target.value) || 0;
+
+          // Actualizar el valor en el objeto producto
+          const prod = productos.find(p => p.id === productId);
+          if (prod && prod.procesos[analisisIndex]) {
+            prod.procesos[analisisIndex].cantidad = newValue;
+
+            // Recalcular totales (esto actualizará Vr. Total automáticamente)
+            updateProductTableTotals(productId, prod);
+          }
+        });
+      }
 
       tbody.appendChild(tr);
     });
@@ -2497,7 +2592,6 @@
     const clientCelular = $quoteClientCelular ? $quoteClientCelular.value.trim() : "";
     const clientFormaPago = $quoteClientFormaPago ? $quoteClientFormaPago.value.trim() : "";
     const duracionAnalisis = $quoteDuracionAnalisis ? $quoteDuracionAnalisis.value.trim() : "";
-    const nota = $quoteNota ? $quoteNota.value.trim() : "";
     const clientId = $quoteClientId ? $quoteClientId.value.trim() : "";
 
     // Obtener contactos seleccionados
@@ -2539,7 +2633,28 @@
     }
 
     // Totales
-    const totalGeneral = selectedProducts.reduce((acc, p) => acc + (p._sumTotal || 0), 0);
+    const subTotal = selectedProducts.reduce((acc, p) => acc + (p._sumTotal || 0), 0);
+
+    // Re-query elements to ensure we have them
+    const elDiscount = document.getElementById("quoteDiscount");
+    const elDiscountPercent = document.getElementById("quoteDiscountPercent");
+
+    // Descuento valor fijo
+    const discountFixed = elDiscount && elDiscount.value ? parseCurrencyInput(elDiscount.value) : 0;
+
+    // Descuento porcentaje
+    let discountPercent = 0;
+    if (elDiscountPercent && elDiscountPercent.value) {
+      discountPercent = parseFloat(elDiscountPercent.value);
+      if (isNaN(discountPercent)) discountPercent = 0;
+    }
+
+    const discountFromPercent = (subTotal * discountPercent) / 100;
+
+    // Descuento total
+    const totalDiscount = discountFixed + discountFromPercent;
+
+    const totalGeneral = Math.max(0, subTotal - totalDiscount);
 
     // Cargar logo (cache) y generar PDF
     if (!logoAsset) {
@@ -2556,12 +2671,15 @@
       clientCelular,
       clientFormaPago,
       duracionAnalisis,
-      nota,
       dateStr,
       quoteNumber,
       products: selectedProducts,
       totalGeneral,
-      logo: logoAsset
+      logo: logoAsset,
+      discount: totalDiscount,
+      subTotal,
+      discountPercent,
+      discountFixed
     });
 
     // Guardar historial con el número de consecutivo
@@ -2576,10 +2694,18 @@
       clientCelular,
       clientFormaPago,
       duracionAnalisis,
-      nota,
       clientId,
-      products: selectedProducts.map((p) => ({ id: p.id, nombre: p.nombre, subtotal: p._sumTotal })),
+      products: selectedProducts.map((p) => ({
+        id: p.id,
+        nombre: p.nombre,
+        subtotal: p._sumTotal,
+        nota: p.nota || undefined
+      })),
       totalCOP: totalGeneral,
+      discount: totalDiscount,
+      discountPercent,
+      discountFixed,
+      subTotal: subTotal,
       userName: currentUser ? currentUser.name || currentUser.username : "",
       userUsername: currentUser ? currentUser.username : ""
     };
@@ -2612,7 +2738,7 @@
       if (!analisisSet.has(index)) return;
 
       const cMtraNum = parseNumStrict(row.cMtra_g ?? row.cMtra);
-      const qty = parseNumStrict(row.cantidad);
+      const qty = parseNumStrict(row.cantidad) || 1;
       // Usar el valor unitario seleccionado
       const unit = parseNumStrict(row[selectedUnit]);
       if (isFinite(cMtraNum)) sumCMtra += cMtraNum;
@@ -2652,7 +2778,8 @@
     if ($quoteClientCelular) $quoteClientCelular.value = "";
     if ($quoteClientFormaPago) $quoteClientFormaPago.value = "";
     if ($quoteDuracionAnalisis) $quoteDuracionAnalisis.value = "";
-    if ($quoteNota) $quoteNota.value = "";
+    if ($quoteDiscount) $quoteDiscount.value = "";
+    if ($quoteDiscountPercent) $quoteDiscountPercent.value = "";
     if ($clientDropdown) $clientDropdown.style.display = "none";
   }
 
@@ -3218,7 +3345,7 @@
     return currentY;
   }
 
-  async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", nota = "", dateStr, quoteNumber, products, totalGeneral, logo }) {
+  async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", dateStr, quoteNumber, products, totalGeneral, logo, discount = 0, subTotal = 0, discountPercent = 0, discountFixed = 0 }) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -3251,20 +3378,20 @@
       return y;
     }
 
-    // Logo en la parte superior izquierda (logoolg.png)
-    const logoW = 220; // ancho fijo en px
+    // Logo en la parte superior izquierda (logo_olg.png)
+    const logoW = 200; // ancho fijo en px
     const logoH = 80;  // alto fijo en px
     const xLogo = left; // Posición izquierda
     const yLogo = 20; // Posición superior
     try {
-      const logoolgDataUrl = await loadImageAsDataUrl("assets/images/logoolg.png");
-      if (logoolgDataUrl) {
-        doc.addImage(logoolgDataUrl, "PNG", xLogo, yLogo, logoW, logoH);
+      const logoOlgDataUrl = await loadImageAsDataUrl("assets/images/logo_olg.png");
+      if (logoOlgDataUrl) {
+        doc.addImage(logoOlgDataUrl, "PNG", xLogo, yLogo, logoW, logoH);
       } else {
-        console.error("No se pudo cargar logoolg.png");
+        console.error("No se pudo cargar logo_olg.png");
       }
     } catch (e) {
-      console.error("Error al cargar logoolg.png:", e);
+      console.error("Error al cargar logo_olg.png:", e);
     }
 
     // Cargar y mostrar C1.png y C2.png en la parte superior derecha
@@ -3321,9 +3448,9 @@
     // Tabla con datos del cliente (debajo de la información de la empresa)
     const tableStartY = yInfo + 16;
     const tableRowHeight = 18;
-    const tableLeftColWidth = 100;
-    const tableRightColWidth = 200;
-    const tableMiddleColWidth = 150;
+    const tableLeftColWidth = 75; // Reducido para acercar el valor a la etiqueta
+    const tableRightColWidth = 245;
+    const tableMiddleColWidth = 195; // Aumentado para mantener el ancho total (75+195 = 270)
     const tableTotalWidth = tableLeftColWidth + tableMiddleColWidth + tableRightColWidth;
     const tableX = left;
 
@@ -3378,7 +3505,7 @@
     // Texto de la columna derecha (Contacto, Email, Celular)
     const rightColX = verticalLineX + 4;
     const contactoNombre = clientContactos && clientContactos.length > 0 ? clientContactos[0] : "";
-    const labelWidth = 55; // Ancho para las etiquetas
+    const labelWidth = 75; // Aumentado para igualar el espacio de la izquierda
     const valueX = rightColX + labelWidth; // Posición X para los valores
     const maxValueWidth = tableRightColWidth - labelWidth - 8; // Ancho máximo para los valores (restar padding)
 
@@ -3411,6 +3538,9 @@
     doc.setDrawColor(...brandPrimary);
     doc.line(left, separatorY, 555, separatorY);
     let y = separatorY + 18;
+
+    // Ancho de texto útil para notas y contenido
+    const textWidth = pageWidth - 2 * left;
 
     // Productos
     products.forEach((p, idx) => {
@@ -3452,7 +3582,7 @@
 
       const tableData = procesosSeleccionados.map((row) => {
         // Calcular el valor total usando el valor unitario seleccionado
-        const qty = parseNumStrict(row.cantidad);
+        const qty = parseNumStrict(row.cantidad) || 1;
         const unitValue = parseNumStrict(row[selectedUnit]);
         let finalTotal = 0;
 
@@ -3471,7 +3601,7 @@
           String(row.analisis ?? ""),
           String(row.metodo ?? ""),
           String((row.cMtra ?? row.cMtra_g) ?? ""),
-          String(row.cantidad ?? ""),
+          String(qty),
           unitValueFormatted,
           String(finalTotal > 0 ? formatMoneyPDF(finalTotal) : "")
         ];
@@ -3482,13 +3612,16 @@
         body: tableData,
         startY: y,
         margin: { top: topMargin, right: left, bottom: bottomMargin, left: left },
+        showHead: 'firstPage', // Solo mostrar encabezado en la primera página
         styles: { font: "helvetica", fontStyle: "normal", fontSize: 8, textColor: [0, 0, 0] },
         headStyles: { font: "helvetica", fontStyle: "bold", fontSize: 8, fillColor: brandPrimary, textColor: [255, 255, 255] },
         columnStyles: {
-          3: { halign: "right" },
-          4: { halign: "right" },
-          5: { halign: "right" },
-          6: { halign: "right", cellWidth: 90 }
+          0: { cellWidth: 50 },
+          2: { cellWidth: 50 },
+          3: { halign: "center", cellWidth: 50 },
+          4: { halign: "center", cellWidth: 35 },
+          5: { halign: "center", cellWidth: 70 },
+          6: { halign: "center", cellWidth: 70 }
         },
         didDrawPage: (data) => { },
         willDrawCell: (data) => { }
@@ -3502,6 +3635,30 @@
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       y += 12;
+
+      // Nota del producto (después del subtotal)
+      const notaProducto = (p.nota && String(p.nota).trim()) || PRODUCTO_NOTA_ESTANDAR;
+      if (notaProducto) {
+        // Título en negrilla al costado izquierdo
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        y = checkPageBreak(y, 18);
+        doc.text("Condiciones del servicio:", left, y);
+
+        // Mayor separación vertical antes del texto de la nota
+        y += 14;
+
+        // Texto de la nota en cursiva y negro normal, sin sangrado
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        y = checkPageBreak(y, 30);
+        y = justifyText(doc, notaProducto, left, y, textWidth, 8, pageHeight, bottomMargin);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        y += 10;
+      }
     });
 
     // Total general
@@ -3509,6 +3666,40 @@
     doc.setDrawColor(...brandPrimary);
     doc.line(left, y, 555, y);
     y += 16;
+
+    // Mostrar Subtotal solo si hay descuento
+    if (discount > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Subtotal: ${formatMoneyPDF(subTotal)}`, left, y);
+      y += 14;
+
+      doc.setTextColor(220, 53, 69); // Rojo para descuento
+
+      // Mostrar desglose si hay ambos descuentos
+      if (discountPercent > 0) {
+        doc.text(`Descuento (${discountPercent}%): -${formatMoneyPDF((subTotal * discountPercent) / 100)}`, left, y);
+        y += 14;
+      }
+      if (discountFixed > 0) {
+        doc.text(`Descuento (valor): -${formatMoneyPDF(discountFixed)}`, left, y);
+        y += 14;
+      }
+
+      // Si solo se pasó el totalDiscount antiguo (compatibilidad) o para mostrar el total de descuento
+      if (discountPercent === 0 && discountFixed === 0) {
+        doc.text(`Descuento: -${formatMoneyPDF(discount)}`, left, y);
+        y += 14;
+      } else if (discountPercent > 0 && discountFixed > 0) {
+        // Opcional: Mostrar total descuento si ambos existen? 
+        // Por ahora con mostrarlos separados es suficiente claridad
+      }
+
+      doc.setTextColor(0, 0, 0);
+      y += 6; // Un poco de espacio extra
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...brandSecondary);
@@ -3517,23 +3708,6 @@
 
     // Nuevo contenido después del precio total
     y += 24;
-
-    const textWidth = pageWidth - 2 * left;
-
-    // CONDICIONES DEL SERVICIO
-    y = checkPageBreak(y, 50);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("CONDICIONES DEL SERVICIO:", left, y);
-    y += 12;
-    if (nota) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      y = justifyText(doc, nota, left, y, textWidth, 9, pageHeight, bottomMargin);
-      y += 20;
-    } else {
-      y += 20;
-    }
 
     // ENVÍO DE LAS MUESTRAS
     y = checkPageBreak(y, 80);
@@ -3880,8 +4054,8 @@
     } catch { }
     // 2) Probar una lista de rutas comunes para el logo
     const candidates = [
-      "assets/images/logoolg.png",
-      "logoolg.png"
+      "assets/images/logo_olg.png",
+      "logo_olg.png"
     ];
     for (const src of candidates) {
       try {
@@ -3978,6 +4152,31 @@
     return { w, h };
   }
 
+  function recomputeTotalsForProduct(product) {
+    if (!product || !product.procesos) return product;
+
+    // Obtener el valor unitario seleccionado (por defecto vrUnitUSD)
+    const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
+
+    // Calcular el subtotal sumando todos los procesos
+    let sumTotal = 0;
+
+    product.procesos.forEach((proceso) => {
+      const qty = parseNumStrict(proceso.cantidad) || 0;
+      const unitValue = parseNumStrict(proceso[selectedUnit]) || 0;
+
+      if (unitValue > 0 && qty > 0) {
+        sumTotal += unitValue * qty;
+      }
+    });
+
+    // Agregar el subtotal calculado al producto
+    product._sumTotal = sumTotal;
+    product._selectedUnit = selectedUnit;
+
+    return product;
+  }
+
   async function onHistoryAction(action, id) {
     const list = getQuotes();
     const q = list.find((x) => x.id === id);
@@ -4000,12 +4199,15 @@
         clientCelular: q.clientCelular || "",
         clientFormaPago: q.clientFormaPago || "",
         duracionAnalisis: q.duracionAnalisis || "",
-        nota: q.nota || "",
         dateStr: q.date,
         quoteNumber: q.quoteNumber || "",
         products: selected,
         totalGeneral: (q.totalCOP != null ? q.totalCOP : q.totalUSD),
-        logo: logoAsset
+        logo: logoAsset,
+        discount: q.discount || 0,
+        subTotal: q.subTotal || 0,
+        discountPercent: q.discountPercent || 0,
+        discountFixed: q.discountFixed || 0
       });
     } else if (action === "delete") {
       showConfirm("¿Borrar esta cotización del historial?", "Borrar").then((ok) => {
@@ -5351,6 +5553,157 @@
     XLSX.writeFile(wb, filename);
   }
 
+  async function exportProductsToExcel() {
+    if (typeof XLSX === "undefined") {
+      showAlert("No se pudo cargar la librería de Excel. Verifica tu conexión.", "error");
+      return;
+    }
+
+    if (productos.length === 0) {
+      showAlert("No hay productos para exportar.", "info");
+      return;
+    }
+
+    // Preparar datos: una fila por cada proceso/análisis
+    // El nombre del producto solo aparece en la primera fila de cada producto
+    const productosRows = [];
+    productos.forEach((producto) => {
+      if (producto.procesos && producto.procesos.length > 0) {
+        producto.procesos.forEach((proceso, index) => {
+          productosRows.push([
+            index === 0 ? (producto.nombre || "") : "", // Solo mostrar nombre en la primera fila
+            proceso.codigo || "",
+            proceso.analisis || "",
+            proceso.metodo || "",
+            proceso.cMtra_g || proceso.cMtra || "",
+            proceso.cantidad || "",
+            proceso.vrUnit1 || "",
+            proceso.vrUnit2 || "",
+            proceso.vrUnit3 || "",
+            proceso.vrUnitUSD || "",
+            index === 0 ? (producto.nota || "") : "" // Solo mostrar nota en la primera fila del producto
+          ]);
+        });
+      } else {
+        // Si el producto no tiene procesos, agregar una fila solo con el nombre y la nota
+        productosRows.push([
+          producto.nombre || "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          producto.nota || ""
+        ]);
+      }
+    });
+
+    const headers = [
+      "Nombre Producto",
+      "Código",
+      "Análisis",
+      "Método",
+      "C. Mtra. [g]",
+      "Cantidad",
+      "Vr. Unitario 1",
+      "Vr. Unitario 2",
+      "Vr. Unitario 3",
+      "Vr. Unitario USD",
+      "Nota"
+    ];
+    const filename = `Productos_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    // Intentar usar ExcelJS con estilos personalizados
+    try {
+      if (typeof ExcelJS !== "undefined") {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("PRODUCTOS");
+
+        // Agregar headers con estilos
+        const headerRow = worksheet.addRow(headers);
+        headerRow.font = { size: 13, bold: true };
+        headerRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF00' } // Amarillo
+        };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Agregar datos
+        productosRows.forEach(row => {
+          const dataRow = worksheet.addRow(row);
+          
+          // Centrar Método (columna 4) y campos numéricos: C. Mtra. [g] (columna 5), Cantidad (columna 6), 
+          // Vr. Unitario 1, 2, 3, USD (columnas 7, 8, 9, 10)
+          // Índices basados en 1: columna D=4, E=5, F=6, G=7, H=8, I=9, J=10
+          const centeredColumns = [4, 5, 6, 7, 8, 9, 10]; // Columnas D, E, F, G, H, I, J
+          centeredColumns.forEach(colIndex => {
+            const cell = dataRow.getCell(colIndex);
+            // Centrar todas las celdas de estas columnas
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          });
+        });
+
+        // Ajustar ancho de columnas
+        worksheet.columns = [
+          { width: 30 }, // Nombre Producto
+          { width: 15 }, // Código
+          { width: 30 }, // Análisis
+          { width: 15 }, // Método
+          { width: 12 }, // C. Mtra. [g]
+          { width: 10 }, // Cantidad
+          { width: 15 }, // Vr. Unitario 1
+          { width: 15 }, // Vr. Unitario 2
+          { width: 15 }, // Vr. Unitario 3
+          { width: 15 }, // Vr. Unitario USD
+          { width: 40 }  // Nota
+        ];
+
+        // Guardar archivo
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        return;
+      }
+    } catch (e) {
+      console.warn("Error al usar ExcelJS:", e);
+    }
+
+    // Si ExcelJS no está disponible, usar XLSX sin estilos
+    const wb = XLSX.utils.book_new();
+    const wsProductos = XLSX.utils.aoa_to_sheet([
+      headers,
+      ...productosRows
+    ]);
+
+    // Ajustar ancho de columnas
+    wsProductos['!cols'] = [
+      { wch: 30 }, // Nombre Producto
+      { wch: 15 }, // Código
+      { wch: 30 }, // Análisis
+      { wch: 15 }, // Método
+      { wch: 12 }, // C. Mtra. [g]
+      { wch: 10 }, // Cantidad
+      { wch: 15 }, // Vr. Unitario 1
+      { wch: 15 }, // Vr. Unitario 2
+      { wch: 15 }, // Vr. Unitario 3
+      { wch: 15 }, // Vr. Unitario USD
+      { wch: 40 }  // Nota
+    ];
+
+    XLSX.utils.book_append_sheet(wb, wsProductos, "PRODUCTOS");
+    XLSX.writeFile(wb, filename);
+  }
+
   function openDeleteContactosModal() {
     if (!$deleteContactosModal || !$deleteContactosList) return;
 
@@ -5887,6 +6240,9 @@
     $productModalTitle.textContent = "Editar Producto";
     $productId.value = product.id;
     $productNombre.value = product.nombre;
+    if ($productNota) {
+      $productNota.value = product.nota || "";
+    }
 
     // Limpiar procesos existentes
     $procesosContainer.innerHTML = "";
@@ -5932,6 +6288,7 @@
       if ($productModalTitle) $productModalTitle.textContent = "Nuevo Producto";
       if ($productId) $productId.value = "";
       if ($productNombre) $productNombre.value = "";
+      if ($productNota) $productNota.value = "";
       if ($procesosContainer) $procesosContainer.innerHTML = "";
       // Agregar una fila vacía inicial
       addProcesoRow();
@@ -5973,14 +6330,18 @@
     const vrUnit2Formatted = procesoData?.vrUnit2 ? formatCurrencyInput(procesoData.vrUnit2) : '';
     const vrUnit3Formatted = procesoData?.vrUnit3 ? formatCurrencyInput(procesoData.vrUnit3) : '';
     const vrUnitUSDFormatted = procesoData?.vrUnitUSD ? formatCurrencyInput(procesoData.vrUnitUSD) : '';
+    
+    // Limpiar el valor de cMtra para extraer solo el número (eliminar "g" u otras unidades)
+    const cMtraValue = procesoData?.cMtra_g || procesoData?.cMtra || '';
+    const cMtraCleaned = cMtraValue ? parseNumStrict(cMtraValue) : '';
 
     tr.innerHTML = `
       <td class="text-center align-middle" style="width: 40px;">${rowIndex + 1}</td>
       <td><input type="text" class="form-control form-control-sm proceso-codigo" value="${escapeHtml(procesoData?.codigo || '')}" placeholder="Ej: AEU-001"></td>
       <td><input type="text" class="form-control form-control-sm proceso-analisis" value="${escapeHtml(procesoData?.analisis || '')}" placeholder="Ej: Identificación" required></td>
       <td><input type="text" class="form-control form-control-sm proceso-metodo" value="${escapeHtml(procesoData?.metodo || '')}" placeholder="Ej: USP <197>"></td>
-      <td><input type="number" class="form-control form-control-sm proceso-cmtra" value="${procesoData?.cMtra_g || procesoData?.cMtra || ''}" placeholder="0" min="0" step="0.01"></td>
-      <td><input type="number" class="form-control form-control-sm proceso-cantidad" value="${procesoData?.cantidad !== undefined && procesoData?.cantidad !== null && procesoData?.cantidad !== '' ? procesoData.cantidad : ''}" placeholder="" min="0" step="1"></td>
+      <td><input type="number" class="form-control form-control-sm proceso-cmtra" value="${cMtraCleaned}" placeholder="0" min="0" step="0.01"></td>
+      <td><input type="number" class="form-control form-control-sm proceso-cantidad" value="${procesoData?.cantidad !== undefined && procesoData?.cantidad !== null && procesoData?.cantidad !== '' ? procesoData.cantidad : '1'}" placeholder="" min="0" step="1"></td>
       <td><input type="text" class="form-control form-control-sm proceso-vrunit1" value="${vrUnit1Formatted}" placeholder="$0"></td>
       <td><input type="text" class="form-control form-control-sm proceso-vrunit2" value="${vrUnit2Formatted}" placeholder="$0"></td>
       <td><input type="text" class="form-control form-control-sm proceso-vrunit3" value="${vrUnit3Formatted}" placeholder="$0"></td>
@@ -6064,6 +6425,7 @@
     }
 
     const nombre = $productNombre.value.trim();
+    const nota = $productNota ? $productNota.value.trim() : "";
     if (!nombre) {
       showAlert("Por favor ingresa el nombre del producto.", "warning");
       return;
@@ -6134,7 +6496,8 @@
           ? {
             ...p,
             nombre,
-            procesos
+            procesos,
+            nota: nota || undefined
           }
           : p
       );
@@ -6159,7 +6522,8 @@
       const newProduct = {
         id: finalId,
         nombre,
-        procesos
+        procesos,
+        nota: nota || undefined
       };
       updatedProducts = [...productos, newProduct];
     }
