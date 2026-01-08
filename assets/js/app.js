@@ -2623,16 +2623,20 @@
       return;
     }
 
+    // Recalcular totales antes de generar el PDF para asegurar que solo se incluyan los análisis seleccionados
     const selectedProducts = productos
       .filter((p) => selectedProductIds.has(p.id))
-      .map(recomputeTotalsForProduct);
+      .map((p) => {
+        // Asegurar que se recalculen los totales correctamente basándose solo en los análisis seleccionados
+        return recomputeTotalsForProduct(p);
+      });
 
     if (selectedProducts.length === 0) {
       showAlert("Selecciona al menos un producto.", "warning");
       return;
     }
 
-    // Totales
+    // Totales - usar solo los _sumTotal que fueron calculados considerando solo los análisis seleccionados
     const subTotal = selectedProducts.reduce((acc, p) => acc + (p._sumTotal || 0), 0);
 
     // Re-query elements to ensure we have them
@@ -2717,39 +2721,6 @@
     closeQuoteModal();
     resetClientForm();
     clearCartSelection();
-  }
-
-  function recomputeTotalsForProduct(product) {
-    let sumCMtra = 0;
-    let sumTotal = 0;
-
-    // Obtener el valor unitario seleccionado para este producto
-    const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
-
-    // Obtener los análisis seleccionados (o todos si no hay selección)
-    const analisisSet = selectedAnalisis.get(product.id);
-    if (!analisisSet || analisisSet.size === 0) {
-      // Si no hay análisis seleccionados, no incluir nada
-      return { ...product, _sumCMtra: 0, _sumTotal: 0, _selectedUnit: selectedUnit };
-    }
-
-    product.procesos.forEach((row, index) => {
-      // Solo procesar si el análisis está seleccionado
-      if (!analisisSet.has(index)) return;
-
-      const cMtraNum = parseNumStrict(row.cMtra_g ?? row.cMtra);
-      const qty = parseNumStrict(row.cantidad) || 1;
-      // Usar el valor unitario seleccionado
-      const unit = parseNumStrict(row[selectedUnit]);
-      if (isFinite(cMtraNum)) sumCMtra += cMtraNum;
-
-      // Solo calcular si el valor unitario seleccionado tiene un valor válido
-      if (unit > 0 && qty > 0) {
-        sumTotal += unit * qty;
-      }
-      // Si el valor unitario está vacío o es 0, no sumar nada
-    });
-    return { ...product, _sumCMtra: sumCMtra, _sumTotal: sumTotal, _selectedUnit: selectedUnit };
   }
 
   function closeQuoteModal() {
@@ -3571,12 +3542,13 @@
       // Obtener los análisis seleccionados para este producto
       const analisisSet = selectedAnalisis.get(p.id);
 
-      // Filtrar solo los procesos seleccionados
+      // Filtrar solo los procesos seleccionados - IMPORTANTE: solo incluir los explícitamente seleccionados
       const procesosSeleccionados = p.procesos.filter((_, index) => {
-        // Si no hay selección, incluir todos (comportamiento por defecto para compatibilidad)
+        // Si no hay análisis seleccionados, no incluir ninguno
         if (!analisisSet || analisisSet.size === 0) {
-          return true;
+          return false;
         }
+        // Solo incluir si está explícitamente en el Set de análisis seleccionados
         return analisisSet.has(index);
       });
 
@@ -4155,26 +4127,43 @@
   function recomputeTotalsForProduct(product) {
     if (!product || !product.procesos) return product;
 
-    // Obtener el valor unitario seleccionado (por defecto vrUnitUSD)
-    const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
-
-    // Calcular el subtotal sumando todos los procesos
+    let sumCMtra = 0;
     let sumTotal = 0;
 
-    product.procesos.forEach((proceso) => {
-      const qty = parseNumStrict(proceso.cantidad) || 0;
-      const unitValue = parseNumStrict(proceso[selectedUnit]) || 0;
+    // Obtener el valor unitario seleccionado para este producto
+    const selectedUnit = selectedUnitValues.get(product.id) || 'vrUnitUSD';
 
-      if (unitValue > 0 && qty > 0) {
-        sumTotal += unitValue * qty;
+    // Obtener los análisis seleccionados - CRÍTICO: solo incluir los que están explícitamente seleccionados
+    const analisisSet = selectedAnalisis.get(product.id);
+    
+    // Si no hay análisis seleccionados explícitamente, no incluir nada en el total
+    if (!analisisSet || analisisSet.size === 0) {
+      return { ...product, _sumCMtra: 0, _sumTotal: 0, _selectedUnit: selectedUnit };
+    }
+
+    // IMPORTANTE: Solo sumar los análisis que están en el Set de análisis seleccionados
+    product.procesos.forEach((row, index) => {
+      // Verificar explícitamente si este índice está en el Set de análisis seleccionados
+      if (!analisisSet.has(index)) {
+        // Este análisis NO está seleccionado, saltarlo completamente
+        return;
       }
+
+      // Solo llegamos aquí si el análisis está seleccionado
+      const cMtraNum = parseNumStrict(row.cMtra_g ?? row.cMtra);
+      const qty = parseNumStrict(row.cantidad) || 1;
+      // Usar el valor unitario seleccionado
+      const unit = parseNumStrict(row[selectedUnit]);
+      if (isFinite(cMtraNum)) sumCMtra += cMtraNum;
+
+      // Solo calcular si el valor unitario seleccionado tiene un valor válido
+      if (unit > 0 && qty > 0) {
+        sumTotal += unit * qty;
+      }
+      // Si el valor unitario está vacío o es 0, no sumar nada
     });
-
-    // Agregar el subtotal calculado al producto
-    product._sumTotal = sumTotal;
-    product._selectedUnit = selectedUnit;
-
-    return product;
+    
+    return { ...product, _sumCMtra: sumCMtra, _sumTotal: sumTotal, _selectedUnit: selectedUnit };
   }
 
   async function onHistoryAction(action, id) {
