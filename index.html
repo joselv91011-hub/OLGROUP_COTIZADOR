@@ -555,6 +555,28 @@
               <input type="number" class="form-control" id="quoteDiscountPercent" placeholder="0%" min="0" max="100"
                 step="0.01">
             </div>
+            <div class="col-12 col-md-6">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="quoteIncludeIva" value="1">
+                <label class="form-check-label" for="quoteIncludeIva">
+                  Incluir IVA (19%)
+                </label>
+              </div>
+              <div class="text-muted small">El IVA se calculará sobre el precio total de la cotización</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="quoteIncludeRetencion" value="1">
+                <label class="form-check-label" for="quoteIncludeRetencion">
+                  Incluir Retención en la Fuente
+                </label>
+              </div>
+              <select class="form-select mt-2" id="quoteRetencionPercent" disabled>
+                <option value="4">4%</option>
+                <option value="11">11%</option>
+              </select>
+              <div class="text-muted small mt-1">La retención se calculará sobre el precio total de la cotización</div>
+            </div>
           </form>
           <div class="small text-muted mt-3">Incluye datos de la empresa, cliente, procesos por producto, subtotal por
             producto y total general. Se guardará en el historial.</div>
@@ -588,6 +610,13 @@
             </div>
             <div class="mb-3">
               <label class="form-label" for="clientContacto">Contacto</label>
+              <!-- Lista de contactos guardados -->
+              <div id="contactosGuardadosContainer" class="mb-3" style="display: none;">
+                <small class="text-muted d-block mb-2">Contactos guardados:</small>
+                <div id="contactosGuardadosList" class="list-group" style="max-height: 150px; overflow-y: auto;">
+                  <!-- Los contactos guardados se mostrarán aquí -->
+                </div>
+              </div>
               <div id="contactosContainer">
                 <div class="input-group mb-2">
                   <input type="text" class="form-control contacto-input" placeholder="Nombre de contacto">

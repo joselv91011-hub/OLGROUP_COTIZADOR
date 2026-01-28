@@ -109,6 +109,9 @@
   const $quoteDuracionAnalisis = document.getElementById("quoteDuracionAnalisis");
   const $quoteDiscount = document.getElementById("quoteDiscount");
   const $quoteDiscountPercent = document.getElementById("quoteDiscountPercent");
+  const $quoteIncludeIva = document.getElementById("quoteIncludeIva");
+  const $quoteIncludeRetencion = document.getElementById("quoteIncludeRetencion");
+  const $quoteRetencionPercent = document.getElementById("quoteRetencionPercent");
   const $clientDropdown = document.getElementById("clientDropdown");
 
   // Nota estándar que se mostrará después de cada tabla de producto en el PDF
@@ -185,6 +188,9 @@
   const $statsCanvas = document.getElementById("statsTopProducts");
   const $noStatsEl = document.getElementById("noStats");
 
+  // Contactos temporales para el modal de cliente (se guardan solo cuando se guarda el cliente)
+  let contactosTemporales = [];
+
   // Clientes
   const $clientsTableBody = document.getElementById("clientsTableBody");
   const $noClients = document.getElementById("noClients");
@@ -200,6 +206,8 @@
   const $clientCelular = document.getElementById("clientCelular");
   const $clientFormaPago = document.getElementById("clientFormaPago");
   const $contactosContainer = document.getElementById("contactosContainer");
+  const $contactosGuardadosContainer = document.getElementById("contactosGuardadosContainer");
+  const $contactosGuardadosList = document.getElementById("contactosGuardadosList");
   const $btnAddContacto = document.getElementById("btnAddContacto");
   const $btnSaveClient = document.getElementById("btnSaveClient");
   const $clientFormModal = document.getElementById("clientFormModal");
@@ -207,7 +215,7 @@
   // Contactos
   const $contactosTableBody = document.getElementById("contactosTableBody");
   const $noContactos = document.getElementById("noContactos");
-  const $btnAddContactoNew = document.getElementById("btnAddContacto");
+  const $btnAddContactoNew = document.getElementById("btnAddContactoNew");
   const $btnImportContactos = document.getElementById("btnImportContactos");
   const $btnExportContactos = document.getElementById("btnExportContactos");
   const $contactosExcelInput = document.getElementById("contactosExcelInput");
@@ -1155,7 +1163,7 @@
     // Event listeners para clientes
     if ($btnAddClient) $btnAddClient.addEventListener("click", () => openClientModal());
     if ($btnSaveClient) $btnSaveClient.addEventListener("click", saveClient);
-    if ($btnAddContacto) $btnAddContacto.addEventListener("click", () => addContactoInput());
+    if ($btnAddContacto) $btnAddContacto.addEventListener("click", () => openContactoModal());
     if ($btnImportClients) $btnImportClients.addEventListener("click", () => $clientsExcelInput.click());
     if ($btnDeleteClients) {
       $btnDeleteClients.addEventListener("click", openDeleteClientsModal);
@@ -1178,6 +1186,21 @@
       clientModalEl.addEventListener("hidden.bs.modal", () => {
         if ($clientFormModal) $clientFormModal.reset();
         if ($clientId) $clientId.value = "";
+        if ($contactosGuardadosContainer) $contactosGuardadosContainer.style.display = "none";
+        // Limpiar contactos temporales cuando se cierra el modal sin guardar
+        const nombreCliente = $clientNombre ? $clientNombre.value.trim() : "";
+        if (nombreCliente) {
+          contactosTemporales = contactosTemporales.filter(c => 
+            !c.nombreCliente || c.nombreCliente.trim().toLowerCase() !== nombreCliente.toLowerCase()
+          );
+        }
+      });
+    }
+
+    // Actualizar lista de contactos guardados cuando cambia el nombre del cliente
+    if ($clientNombre) {
+      $clientNombre.addEventListener("input", () => {
+        renderContactosGuardados();
       });
     }
 
@@ -1206,6 +1229,11 @@
       contactoModalEl.addEventListener("hidden.bs.modal", () => {
         if ($contactoFormModal) $contactoFormModal.reset();
         if ($contactoId) $contactoId.value = "";
+        // Resetear el estado del campo readonly
+        if ($contactoNombreCliente) {
+          $contactoNombreCliente.removeAttribute("readonly");
+          $contactoNombreCliente.style.backgroundColor = "";
+        }
       });
     }
 
@@ -1304,6 +1332,13 @@
       });
     }
 
+    // Event listener para habilitar/deshabilitar el selector de retención
+    if ($quoteIncludeRetencion && $quoteRetencionPercent) {
+      $quoteIncludeRetencion.addEventListener("change", (e) => {
+        $quoteRetencionPercent.disabled = !e.target.checked;
+      });
+    }
+
     // Inicializar autocompletado de clientes
     setupClientAutocomplete();
     setupContactoAutocomplete();
@@ -1351,6 +1386,35 @@
     }
     if ($btnSaveProduct) {
       $btnSaveProduct.addEventListener("click", saveProduct);
+    }
+
+    // Manejador de pegado para limpiar y normalizar texto pegado en productNota
+    if ($productNota) {
+      $productNota.addEventListener("paste", function (e) {
+        e.preventDefault();
+        
+        // Obtener el texto pegado desde el portapapeles
+        const paste = (e.clipboardData || window.clipboardData).getData("text");
+        
+        // Limpiar el texto pegado usando la función normalizadora
+        const cleanedText = normalizeText(paste);
+        
+        // Obtener la posición del cursor
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        const currentValue = this.value;
+        
+        // Insertar el texto limpio en la posición del cursor
+        const newValue = currentValue.substring(0, start) + cleanedText + currentValue.substring(end);
+        this.value = newValue;
+        
+        // Restaurar la posición del cursor después del texto insertado
+        const newCursorPos = start + cleanedText.length;
+        this.setSelectionRange(newCursorPos, newCursorPos);
+        
+        // Disparar evento input para que otros listeners sepan que el valor cambió
+        this.dispatchEvent(new Event("input", { bubbles: true }));
+      });
     }
 
     // Resetear formulario de producto al cerrar el modal
@@ -2177,14 +2241,23 @@
     body.appendChild(renderProductTable(product));
 
     // Nota del producto visible debajo de la tabla en el módulo Productos y procesos
-    const notaProducto = product.nota && String(product.nota).trim();
+    const notaProductoRaw = product.nota && String(product.nota).trim();
+    const notaProducto = notaProductoRaw ? normalizeText(notaProductoRaw) : "";
     if (notaProducto) {
       const noteDiv = document.createElement("div");
       // Mismas características visuales que en el PDF: título en negrilla negro, texto en cursiva negro
       noteDiv.className = "px-3 pb-3 pt-2 small border-top";
+      // Escapar HTML y convertir saltos de línea a <br>
+      const notaEscapada = notaProducto
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
       noteDiv.innerHTML = `
         <div class="fw-semibold mb-1">Condiciones del servicio:</div>
-        <div class="fst-italic">${notaProducto.replace(/\n/g, "<br>")}</div>
+        <div class="fst-italic">${notaEscapada}</div>
       `;
       body.appendChild(noteDiv);
     }
@@ -2658,7 +2731,30 @@
     // Descuento total
     const totalDiscount = discountFixed + discountFromPercent;
 
-    const totalGeneral = Math.max(0, subTotal - totalDiscount);
+    // Subtotal después de descuentos (base para calcular IVA y retención)
+    const subtotalDespuesDescuentos = Math.max(0, subTotal - totalDiscount);
+
+    // Calcular IVA (19% del subtotal después de descuentos)
+    let iva = 0;
+    let includeIva = false;
+    if ($quoteIncludeIva && $quoteIncludeIva.checked) {
+      includeIva = true;
+      iva = (subtotalDespuesDescuentos * 19) / 100;
+    }
+
+    // Calcular Retención en la Fuente (4% o 11% del subtotal después de descuentos)
+    let retencion = 0;
+    let includeRetencion = false;
+    let retencionPercent = 0;
+    if ($quoteIncludeRetencion && $quoteIncludeRetencion.checked && $quoteRetencionPercent) {
+      includeRetencion = true;
+      retencionPercent = parseFloat($quoteRetencionPercent.value) || 0;
+      retencion = (subtotalDespuesDescuentos * retencionPercent) / 100;
+    }
+
+    // Total general = subtotal después de descuentos - retención + IVA
+    // (la retención en la fuente disminuye el valor a pagar, no lo incrementa)
+    const totalGeneral = subtotalDespuesDescuentos - retencion + iva;
 
     // Cargar logo (cache) y generar PDF
     if (!logoAsset) {
@@ -2683,7 +2779,12 @@
       discount: totalDiscount,
       subTotal,
       discountPercent,
-      discountFixed
+      discountFixed,
+      includeIva,
+      iva,
+      includeRetencion,
+      retencion,
+      retencionPercent
     });
 
     // Guardar historial con el número de consecutivo
@@ -2710,6 +2811,11 @@
       discountPercent,
       discountFixed,
       subTotal: subTotal,
+      includeIva,
+      iva,
+      includeRetencion,
+      retencion,
+      retencionPercent,
       userName: currentUser ? currentUser.name || currentUser.username : "",
       userUsername: currentUser ? currentUser.username : ""
     };
@@ -2751,6 +2857,11 @@
     if ($quoteDuracionAnalisis) $quoteDuracionAnalisis.value = "";
     if ($quoteDiscount) $quoteDiscount.value = "";
     if ($quoteDiscountPercent) $quoteDiscountPercent.value = "";
+    if ($quoteIncludeIva) $quoteIncludeIva.checked = false;
+    if ($quoteIncludeRetencion) {
+      $quoteIncludeRetencion.checked = false;
+      if ($quoteRetencionPercent) $quoteRetencionPercent.disabled = true;
+    }
     if ($clientDropdown) $clientDropdown.style.display = "none";
   }
 
@@ -3245,6 +3356,101 @@
   }
 
   // Función helper para justificar texto en jsPDF
+  // Función para normalizar y limpiar texto pegado desde cualquier fuente
+  function normalizeText(text) {
+    if (!text || typeof text !== "string") {
+      return "";
+    }
+    
+    // Crear un elemento temporal para extraer texto de HTML si viene con formato
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = text;
+    let cleanText = tempDiv.textContent || tempDiv.innerText || text;
+    
+    // Eliminar caracteres especiales invisibles (espacios no separables, etc.)
+    cleanText = cleanText
+      .replace(/\u00A0/g, " ") // Reemplazar espacios no separables con espacios normales
+      .replace(/\u200B/g, "") // Eliminar espacios de ancho cero
+      .replace(/\u200C/g, "") // Eliminar marcas de formato invisible
+      .replace(/\u200D/g, "") // Eliminar marcas de formato invisible
+      .replace(/\uFEFF/g, "") // Eliminar BOM (Byte Order Mark)
+      .replace(/[\u2000-\u200F]/g, " ") // Eliminar otros espacios Unicode especiales
+      .replace(/[\u2028-\u202F]/g, " ") // Eliminar otros separadores Unicode
+      .replace(/[\u2060-\u206F]/g, ""); // Eliminar otros caracteres invisibles
+    
+    // Normalizar saltos de línea (unificar diferentes tipos)
+    cleanText = cleanText
+      .replace(/\r\n/g, "\n") // Windows
+      .replace(/\r/g, "\n"); // Mac antiguo
+    
+    // Normalizar espacios múltiples: convertir múltiples espacios/tabs en un solo espacio
+    // Primero reemplazar tabs con espacios
+    cleanText = cleanText.replace(/\t/g, " ");
+    // Luego colapsar múltiples espacios en uno solo
+    cleanText = cleanText.replace(/[ ]{2,}/g, " ");
+    
+    // Eliminar espacios al inicio y final de cada línea
+    cleanText = cleanText
+      .split("\n")
+      .map(line => line.trim())
+      .join("\n");
+    
+    // Eliminar líneas vacías múltiples (más de 2 líneas vacías seguidas se convierten en 2)
+    cleanText = cleanText.replace(/\n{3,}/g, "\n\n");
+    
+    // Eliminar espacios al inicio y final del texto completo
+    cleanText = cleanText.trim();
+    
+    return cleanText;
+  }
+
+  // Función para renderizar texto multilínea alineado a la izquierda (sin justificar)
+  function renderTextLeftAligned(doc, text, x, y, maxWidth, fontSize = 9, pageHeight = null, bottomMargin = 40) {
+    if (!text || text.trim().length === 0) {
+      return y;
+    }
+
+    // Normalizar el texto antes de procesarlo
+    const normalizedText = normalizeText(text);
+    
+    // Dividir el texto en líneas, preservando saltos de línea explícitos
+    // Primero dividir por saltos de línea para preservar la estructura
+    const textLines = normalizedText.split('\n');
+    const lineHeight = fontSize * 1.2;
+    let currentY = y;
+
+    for (let textLineIndex = 0; textLineIndex < textLines.length; textLineIndex++) {
+      const textLine = textLines[textLineIndex].trim();
+      
+      if (textLine.length === 0) {
+        // Línea vacía: agregar espacio vertical
+        currentY += lineHeight * 0.5;
+        continue;
+      }
+
+      // Dividir la línea en múltiples líneas si es necesario para que quepa en el ancho
+      const wrappedLines = doc.splitTextToSize(textLine, maxWidth);
+
+      for (let wrappedIndex = 0; wrappedIndex < wrappedLines.length; wrappedIndex++) {
+        const line = wrappedLines[wrappedIndex].trim();
+
+        // Verificar si necesitamos una nueva página antes de agregar esta línea
+        if (pageHeight && currentY + lineHeight > pageHeight - bottomMargin) {
+          doc.addPage();
+          currentY = 50; // Posición inicial en la nueva página con margen superior
+        }
+
+        // Renderizar la línea alineada a la izquierda
+        if (line.length > 0) {
+          doc.text(line, x, currentY);
+        }
+        currentY += lineHeight;
+      }
+    }
+
+    return currentY;
+  }
+
   function justifyText(doc, text, x, y, maxWidth, fontSize = 9, pageHeight = null, bottomMargin = 40) {
     if (!text || text.trim().length === 0) {
       return y;
@@ -3316,7 +3522,7 @@
     return currentY;
   }
 
-  async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", dateStr, quoteNumber, products, totalGeneral, logo, discount = 0, subTotal = 0, discountPercent = 0, discountFixed = 0 }) {
+  async function generatePDF({ clientName, clientEmail, clientNit, clientContactos = [], clientCelular = "", clientFormaPago = "", duracionAnalisis = "", dateStr, quoteNumber, products, totalGeneral, logo, discount = 0, subTotal = 0, discountPercent = 0, discountFixed = 0, includeIva = false, iva = 0, includeRetencion = false, retencion = 0, retencionPercent = 0 }) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -3339,6 +3545,24 @@
     const right = 555; // ancho útil para alinear a la derecha
     const bottomMargin = 40; // margen inferior
     const topMargin = 50; // margen superior para nuevas páginas
+
+    // Función helper para agregar numeración de páginas en la parte inferior derecha
+    function addPageNumber() {
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100); // Color gris sutil
+        const pageText = `Página ${i} de ${totalPages}`;
+        const textWidth = doc.getTextWidth(pageText);
+        // Posición X más a la derecha (margen derecho más pequeño)
+        const xPos = pageWidth - textWidth - 20; // Reducido de 'left' (40) a 20 para más a la derecha
+        // Posición Y más abajo (más cerca del borde inferior)
+        const yPos = pageHeight - 12; // Reducido de 20 a 12 para más abajo
+        doc.text(pageText, xPos, yPos);
+      }
+    }
 
     // Función helper para verificar y crear nueva página si es necesario
     function checkPageBreak(y, requiredSpace = 20) {
@@ -3609,7 +3833,8 @@
       y += 12;
 
       // Nota del producto (después del subtotal)
-      const notaProducto = (p.nota && String(p.nota).trim()) || PRODUCTO_NOTA_ESTANDAR;
+      const notaProductoRaw = (p.nota && String(p.nota).trim()) || PRODUCTO_NOTA_ESTANDAR;
+      const notaProducto = normalizeText(notaProductoRaw);
       if (notaProducto) {
         // Título en negrilla al costado izquierdo
         doc.setFont("helvetica", "bold");
@@ -3626,7 +3851,8 @@
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
         y = checkPageBreak(y, 30);
-        y = justifyText(doc, notaProducto, left, y, textWidth, 8, pageHeight, bottomMargin);
+        // Usar renderizado simple alineado a la izquierda para evitar problemas de espaciado
+        y = renderTextLeftAligned(doc, notaProducto, left, y, textWidth, 8, pageHeight, bottomMargin);
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
         y += 10;
@@ -3635,12 +3861,33 @@
 
     // Total general
     y += 4;
+    
+    // Verificar si hay suficiente espacio para la línea separadora y el total general
+    // Necesitamos espacio para: línea + margen + subtotal (si hay descuento) + descuentos + IVA + retención + total general
+    let espacioNecesario = 20; // Línea separadora + margen inicial
+    if (discount > 0) {
+      espacioNecesario += 14; // Subtotal
+      if (discountPercent > 0) espacioNecesario += 14;
+      if (discountFixed > 0) espacioNecesario += 14;
+      if (discountPercent === 0 && discountFixed === 0) espacioNecesario += 14; // Descuento simple
+      espacioNecesario += 12; // Espacio extra después de descuentos
+    }
+    // Agregar espacio para IVA y retención si están activados
+    if (includeIva && iva > 0) espacioNecesario += 14;
+    if (includeRetencion && retencion > 0) espacioNecesario += 14;
+    // Espacio adicional después de IVA y retención
+    if ((includeIva && iva > 0) || (includeRetencion && retencion > 0)) espacioNecesario += 6;
+    espacioNecesario += 30; // Espacio para el total general (tamaño de fuente 12 + margen + espacio después)
+    
+    y = checkPageBreak(y, espacioNecesario);
+    
     doc.setDrawColor(...brandPrimary);
     doc.line(left, y, 555, y);
-    y += 16;
+    y += 18;
 
     // Mostrar Subtotal solo si hay descuento
     if (discount > 0) {
+      y = checkPageBreak(y, 14);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
@@ -3651,16 +3898,19 @@
 
       // Mostrar desglose si hay ambos descuentos
       if (discountPercent > 0) {
+        y = checkPageBreak(y, 14);
         doc.text(`Descuento (${discountPercent}%): -${formatMoneyPDF((subTotal * discountPercent) / 100)}`, left, y);
         y += 14;
       }
       if (discountFixed > 0) {
+        y = checkPageBreak(y, 14);
         doc.text(`Descuento (valor): -${formatMoneyPDF(discountFixed)}`, left, y);
         y += 14;
       }
 
       // Si solo se pasó el totalDiscount antiguo (compatibilidad) o para mostrar el total de descuento
       if (discountPercent === 0 && discountFixed === 0) {
+        y = checkPageBreak(y, 14);
         doc.text(`Descuento: -${formatMoneyPDF(discount)}`, left, y);
         y += 14;
       } else if (discountPercent > 0 && discountFixed > 0) {
@@ -3672,17 +3922,48 @@
       y += 6; // Un poco de espacio extra
     }
 
+    // Mostrar IVA solo si está activado (ANTES del total general)
+    if (includeIva && iva > 0) {
+      y = checkPageBreak(y, 14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`IVA (19%): ${formatMoneyPDF(iva)}`, left, y);
+      y += 14;
+    }
+
+    // Mostrar Retención en la Fuente solo si está activada (ANTES del total general).
+    // La retención se muestra como un valor que RESTA al total.
+    if (includeRetencion && retencion > 0) {
+      y = checkPageBreak(y, 14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Retención en la Fuente (${retencionPercent}%): -${formatMoneyPDF(retencion)}`, left, y);
+      y += 14;
+    }
+
+    // Agregar espacio adicional después de IVA y retención antes del total general
+    if ((includeIva && iva > 0) || (includeRetencion && retencion > 0)) {
+      y += 6;
+    }
+
+    // Verificar espacio antes de dibujar el total general (incluyendo espacio después)
+    y = checkPageBreak(y, 30);
+    
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...brandSecondary);
-    doc.text(`Total general (COP): ${formatMoneyPDF(totalGeneral)}`, left, y);
+    // Asegurar que el texto esté completamente visible (agregar espacio vertical adicional)
+    doc.text(`Total general (COP): ${formatMoneyPDF(totalGeneral)}`, left, y + 2);
     doc.setTextColor(0, 0, 0);
 
-    // Nuevo contenido después del precio total
+    // Agregar espacio suficiente después del total general antes de la siguiente sección
     y += 24;
 
     // ENVÍO DE LAS MUESTRAS
-    y = checkPageBreak(y, 80);
+    // Verificar que haya suficiente espacio para el título y el texto de envío
+    y = checkPageBreak(y, 100);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("ENVÍO DE LAS MUESTRAS", left, y);
@@ -3788,6 +4069,9 @@
       doc.setFont("helvetica", "bold");
       doc.text(userCargo, left, y);
     }
+
+    // Agregar numeración de páginas a todas las páginas del documento
+    addPageNumber();
 
     // Nombre del archivo incluyendo el número de consecutivo si está disponible
     const filename = quoteNumber
@@ -4196,7 +4480,12 @@
         discount: q.discount || 0,
         subTotal: q.subTotal || 0,
         discountPercent: q.discountPercent || 0,
-        discountFixed: q.discountFixed || 0
+        discountFixed: q.discountFixed || 0,
+        includeIva: q.includeIva || false,
+        iva: q.iva || 0,
+        includeRetencion: q.includeRetencion || false,
+        retencion: q.retencion || 0,
+        retencionPercent: q.retencionPercent || 0
       });
     } else if (action === "delete") {
       showConfirm("¿Borrar esta cotización del historial?", "Borrar").then((ok) => {
@@ -4657,6 +4946,29 @@
       return;
     }
 
+    // Obtener contactos temporales que pertenecen a este cliente
+    const contactosTemporalesDelCliente = contactosTemporales.filter(c => 
+      c.nombreCliente && c.nombreCliente.trim().toLowerCase() === nombre.toLowerCase()
+    );
+
+    // Guardar los contactos temporales en la tabla de contactos
+    if (contactosTemporalesDelCliente.length > 0) {
+      const allContactos = getContactos();
+      const contactosParaGuardar = contactosTemporalesDelCliente.map((c, index) => ({
+        ...c,
+        id: `CONTACTO-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        isTemporary: undefined // Remover la marca temporal
+      }));
+      const updatedContactos = [...allContactos, ...contactosParaGuardar];
+      saveContactos(updatedContactos);
+      renderContactos();
+      
+      // Eliminar los contactos temporales que se guardaron
+      contactosTemporales = contactosTemporales.filter(c => 
+        !contactosTemporalesDelCliente.some(ct => ct.id === c.id)
+      );
+    }
+
     const clients = getClients();
     let updatedClients;
 
@@ -4665,15 +4977,15 @@
       updatedClients = clients.map((c) =>
         c.id === id
           ? {
-            ...c,
-            nombre,
-            nit,
-            contactos: contactos.length > 0 ? contactos : (c.contactos || []),
-            correo,
-            celular,
-            formaPago,
-            updatedAt: new Date().toISOString()
-          }
+              ...c,
+              nombre,
+              nit,
+              contactos: contactos.length > 0 ? contactos : (c.contactos || []),
+              correo,
+              celular,
+              formaPago,
+              updatedAt: new Date().toISOString()
+            }
           : c
       );
     } else {
@@ -4817,6 +5129,11 @@
   function openClientModal(client = null) {
     if (!$clientModalTitle || !$clientId || !$clientNombre || !$clientNit || !$clientCorreo) return;
 
+    // Limpiar contactos temporales cuando se abre el modal (para un nuevo cliente)
+    if (!client) {
+      contactosTemporales = [];
+    }
+
     if (client) {
       $clientModalTitle.textContent = "Editar Cliente";
       $clientId.value = client.id;
@@ -4858,6 +5175,10 @@
     if (modalEl && typeof bootstrap !== "undefined") {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
+      // Renderizar contactos guardados después de mostrar el modal
+      setTimeout(() => {
+        renderContactosGuardados();
+      }, 100);
     }
   }
 
@@ -4899,6 +5220,85 @@
     });
   }
 
+  function renderContactosGuardados() {
+    if (!$contactosGuardadosContainer || !$contactosGuardadosList || !$clientNombre) return;
+
+    const nombreCliente = $clientNombre.value.trim();
+    if (!nombreCliente) {
+      $contactosGuardadosContainer.style.display = "none";
+      return;
+    }
+
+    const allContactos = getContactos();
+    const contactosDelCliente = allContactos.filter(c => 
+      c.nombreCliente && c.nombreCliente.trim().toLowerCase() === nombreCliente.toLowerCase()
+    );
+
+    // Agregar contactos temporales que coincidan con el nombre del cliente
+    const contactosTemporalesDelCliente = contactosTemporales.filter(c => 
+      c.nombreCliente && c.nombreCliente.trim().toLowerCase() === nombreCliente.toLowerCase()
+    );
+
+    const todosLosContactos = [...contactosDelCliente, ...contactosTemporalesDelCliente];
+
+    if (todosLosContactos.length === 0) {
+      $contactosGuardadosContainer.style.display = "none";
+      return;
+    }
+
+    $contactosGuardadosContainer.style.display = "block";
+    $contactosGuardadosList.innerHTML = "";
+
+    todosLosContactos.forEach(contacto => {
+      const item = document.createElement("div");
+      item.className = "list-group-item d-flex justify-content-between align-items-center";
+      const isTemporary = contacto.isTemporary || contacto.id.startsWith("TEMP-");
+      item.innerHTML = `
+        <div class="flex-grow-1">
+          <strong>${escapeHtml(contacto.nombre || "")}</strong>
+          ${contacto.correo ? `<br><small class="text-muted">${escapeHtml(contacto.correo)}</small>` : ""}
+          ${isTemporary ? `<br><small class="text-info"><i class="bi bi-info-circle"></i> Pendiente de guardar</small>` : ""}
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-contacto-guardado" data-id="${contacto.id}" data-temporary="${isTemporary}">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      $contactosGuardadosList.appendChild(item);
+    });
+
+    // Agregar eventos a los botones de eliminar
+    $contactosGuardadosList.querySelectorAll(".btn-remove-contacto-guardado").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.id;
+        const isTemporary = btn.dataset.temporary === "true";
+        
+        let contacto;
+        if (isTemporary) {
+          contacto = contactosTemporalesDelCliente.find(c => c.id === id);
+        } else {
+          contacto = contactosDelCliente.find(c => c.id === id);
+        }
+
+        if (contacto) {
+          const confirmed = await showConfirm(
+            `¿Estás seguro de que deseas eliminar el contacto "${contacto.nombre}"?`,
+            "Eliminar"
+          );
+          if (confirmed) {
+            if (isTemporary) {
+              // Eliminar de contactos temporales
+              contactosTemporales = contactosTemporales.filter(c => c.id !== id);
+            } else {
+              // Eliminar de contactos guardados
+              await deleteContacto(id);
+            }
+            renderContactosGuardados();
+          }
+        }
+      });
+    });
+  }
+
   function closeClientModal() {
     const modalEl = document.getElementById("clientModal");
     if (modalEl && typeof bootstrap !== "undefined") {
@@ -4906,6 +5306,8 @@
       modal.hide();
     }
     if ($clientFormModal) $clientFormModal.reset();
+    // Limpiar contactos temporales después de guardar
+    contactosTemporales = [];
   }
 
   function renderClients() {
@@ -5281,12 +5683,29 @@
       $contactoNombreCliente.value = contacto.nombreCliente || "";
       $contactoNombre.value = contacto.nombre || "";
       $contactoCorreo.value = contacto.correo || "";
+      // Habilitar el campo al editar
+      $contactoNombreCliente.removeAttribute("readonly");
+      $contactoNombreCliente.style.backgroundColor = "";
     } else {
       $contactoModalTitle.textContent = "Nuevo Contacto";
       $contactoId.value = "";
-      $contactoNombreCliente.value = "";
       $contactoNombre.value = "";
       $contactoCorreo.value = "";
+      
+      // Si el modal de cliente está abierto, auto-completar el nombre del cliente
+      const clientModalEl = document.getElementById("clientModal");
+      const isClientModalOpen = clientModalEl && clientModalEl.classList.contains("show");
+      if (isClientModalOpen && $clientNombre && $clientNombre.value.trim()) {
+        $contactoNombreCliente.value = $clientNombre.value.trim();
+        // Deshabilitar el campo cuando viene del modal de cliente
+        $contactoNombreCliente.setAttribute("readonly", "readonly");
+        $contactoNombreCliente.style.backgroundColor = "#e9ecef";
+      } else {
+        $contactoNombreCliente.value = "";
+        // Habilitar el campo cuando se abre independientemente
+        $contactoNombreCliente.removeAttribute("readonly");
+        $contactoNombreCliente.style.backgroundColor = "";
+      }
     }
 
     const modalEl = document.getElementById("contactoModal");
@@ -5297,21 +5716,75 @@
   }
 
   function saveContacto() {
-    if (!$contactoFormModal || !$contactoFormModal.checkValidity()) {
-      $contactoFormModal.reportValidity();
-      return;
-    }
-
     const nombreCliente = $contactoNombreCliente.value.trim();
     const nombre = $contactoNombre.value.trim();
     const correo = $contactoCorreo.value.trim();
     const id = $contactoId.value.trim();
 
+    // Validación manual para evitar problemas con campos readonly
     if (!nombreCliente || !nombre) {
       showAlert("El nombre del cliente y el nombre del contacto son requeridos.", "warning");
+      // Enfocar el campo que falta
+      if (!nombreCliente && $contactoNombreCliente) {
+        $contactoNombreCliente.focus();
+      } else if (!nombre && $contactoNombre) {
+        $contactoNombre.focus();
+      }
       return;
     }
 
+    // Validar el resto del formulario (correo si está presente debe ser válido)
+    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      showAlert("Por favor ingresa un correo electrónico válido.", "warning");
+      if ($contactoCorreo) $contactoCorreo.focus();
+      return;
+    }
+
+    // Verificar si el modal de cliente está abierto (el campo está readonly)
+    const clientModalEl = document.getElementById("clientModal");
+    const isClientModalOpen = clientModalEl && clientModalEl.classList.contains("show");
+    const isFromClientModal = isClientModalOpen && $contactoNombreCliente.hasAttribute("readonly");
+
+    if (isFromClientModal && !id) {
+      // Si viene del modal de cliente y es un nuevo contacto, guardarlo temporalmente
+      const newContacto = {
+        id: `TEMP-CONTACTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        nombreCliente,
+        nombre,
+        correo,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isTemporary: true
+      };
+      contactosTemporales.push(newContacto);
+      
+      // Mostrar mensaje de éxito
+      showAlert("Contacto agregado. Se guardará cuando guardes el cliente.", "success");
+      
+      // Actualizar la lista de contactos guardados en el modal de cliente
+      renderContactosGuardados();
+      
+      // Cerrar el modal
+      const modalEl = document.getElementById("contactoModal");
+      if (modalEl && typeof bootstrap !== "undefined") {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.hide();
+      }
+
+      // Limpiar el formulario después de cerrar
+      if ($contactoFormModal) {
+        $contactoFormModal.reset();
+        if ($contactoId) $contactoId.value = "";
+        if ($contactoNombreCliente) {
+          $contactoNombreCliente.setAttribute("readonly", "readonly");
+          $contactoNombreCliente.style.backgroundColor = "#e9ecef";
+          $contactoNombreCliente.value = nombreCliente; // Restaurar el valor del cliente
+        }
+      }
+      return;
+    }
+
+    // Si no viene del modal de cliente o es edición, guardar normalmente en la tabla de contactos
     const contactos = getContactos();
     let updatedContactos;
 
@@ -5320,16 +5793,16 @@
       updatedContactos = contactos.map((c) =>
         c.id === id
           ? {
-            ...c,
-            nombreCliente,
-            nombre,
-            correo,
-            updatedAt: new Date().toISOString()
-          }
+              ...c,
+              nombreCliente,
+              nombre,
+              correo,
+              updatedAt: new Date().toISOString()
+            }
           : c
       );
     } else {
-      // Nuevo contacto
+      // Nuevo contacto (desde la vista de contactos independiente)
       const newContacto = {
         id: `CONTACTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         nombreCliente,
@@ -5344,10 +5817,29 @@
     saveContactos(updatedContactos);
     renderContactos();
 
+    // Mostrar mensaje de éxito
+    showAlert(id ? "Contacto actualizado exitosamente." : "Contacto guardado exitosamente.", "success");
+
+    // Actualizar la lista de contactos guardados en el modal de cliente si está abierto
+    if (isClientModalOpen) {
+      renderContactosGuardados();
+    }
+
+    // Cerrar el modal
     const modalEl = document.getElementById("contactoModal");
     if (modalEl && typeof bootstrap !== "undefined") {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.hide();
+    }
+
+    // Limpiar el formulario después de cerrar
+    if ($contactoFormModal) {
+      $contactoFormModal.reset();
+      if ($contactoId) $contactoId.value = "";
+      if ($contactoNombreCliente) {
+        $contactoNombreCliente.removeAttribute("readonly");
+        $contactoNombreCliente.style.backgroundColor = "";
+      }
     }
   }
 
@@ -5358,6 +5850,13 @@
     const contactos = getContactos().filter((c) => c.id !== id);
     saveContactos(contactos);
     renderContactos();
+
+    // Actualizar la lista de contactos guardados en el modal de cliente si está abierto
+    const clientModalEl = document.getElementById("clientModal");
+    const isClientModalOpen = clientModalEl && clientModalEl.classList.contains("show");
+    if (isClientModalOpen) {
+      renderContactosGuardados();
+    }
   }
 
   function onContactosExcelSelected(e) {
@@ -6414,7 +6913,7 @@
     }
 
     const nombre = $productNombre.value.trim();
-    const nota = $productNota ? $productNota.value.trim() : "";
+    const nota = $productNota ? normalizeText($productNota.value) : "";
     if (!nombre) {
       showAlert("Por favor ingresa el nombre del producto.", "warning");
       return;
