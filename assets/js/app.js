@@ -2541,12 +2541,12 @@
           analisisSet.delete(analisisIndex);
         }
 
-        // Sincronizar checkbox del producto: si todos los análisis están seleccionados, marcar el producto
+        // Sincronizar checkbox del producto: si se selecciona al menos un análisis, marcar el producto automáticamente
         // Si ningún análisis está seleccionado, desmarcar el producto
         const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
         if (productCheckbox) {
-          if (analisisSet.size === productData.procesos.length) {
-            // Todos seleccionados: marcar el checkbox del producto
+          if (analisisSet.size > 0) {
+            // Al menos un análisis seleccionado: marcar el checkbox del producto
             if (!selectedProductIds.has(productId)) {
               selectedProductIds.add(productId);
               productCheckbox.checked = true;
